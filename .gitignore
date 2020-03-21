@@ -1,0 +1,7 @@
+__pycache__/
+*$py.class
+logs/
+data/
+workspaces/
+*.pth
+*.log
