@@ -28,7 +28,6 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu):
 
     end = time.time()
     for i, (X,y) in enumerate(loader):
-        print(X.shape, i, len(loader))
         if gpu:
             X,y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)

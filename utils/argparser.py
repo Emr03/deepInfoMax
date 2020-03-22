@@ -1,7 +1,7 @@
 import argparse
 import os
 
-def argparser(batch_size=32, epochs=1, seed=0, verbose=1, lr=1e-4,
+def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
               opt='adam', momentum=0.9, weight_decay=5e-4):
 
     parser = argparse.ArgumentParser()
