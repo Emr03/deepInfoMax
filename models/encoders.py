@@ -19,19 +19,23 @@ class LocalEncoder(nn.Module):
         super(LocalEncoder, self).__init__()
         self.main = nn.Sequential(
             # input is (nc) x 32 x 32
-            nn.Conv2d(num_channels, ndf, 4, 2, 1, bias=False),
+            nn.Conv2d(num_channels, ndf, kernel_size=4, stride=1, bias=False),
             nn.ReLU(inplace=True),
-            # state size. (ndf) x 16 x 16
-            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            # state size. 64 x 29 x 29
+            nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=1, bias=False),
             nn.BatchNorm2d(ndf * 2),
             nn.ReLU(inplace=True),
-            # state size. (ndf*2) x 8 x 8
-            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            # state size. 128 x 26 x 26
+            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=1, bias=False),
             nn.BatchNorm2d(ndf * 4),
             nn.ReLU(inplace=True),
-            # state size (256) x 4 x 4
+            # state size (256) x 23 x 23
+            nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.ReLU(inplace=True),
+            # state size (512) x 20 x 20
         )
-        self.output_shape = [ndf*4, input_size // 8, input_size // 8]
+        self.output_shape = [ndf * 8, 20, 20]
         self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
 
     def forward(self, input):
