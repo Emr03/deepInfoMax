@@ -1,5 +1,6 @@
 import argparse
 import os
+import torch
 
 def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
               opt='adam', momentum=0.9, weight_decay=5e-4):
@@ -29,5 +30,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     if args.cuda_ids is not None:
         print('Setting CUDA_VISIBLE_DEVICES to {}'.format(args.cuda_ids))
         os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda_ids
+
+    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     return args

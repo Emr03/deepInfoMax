@@ -32,6 +32,10 @@ if __name__ == "__main__":
     else:
         DIM = LocalDIM(encoder)
 
+    if len(args.cuda_ids) > 1:
+        DIM = nn.DataParallel(DIM)
+
+    DIM = DIM.to(args.device)
     enc_opt = optim.Adam(DIM.global_encoder.parameters(), lr=args.lr)
     T_opt = optim.Adam(DIM.T.parameters(), lr=args.lr)
     # if num of visible devices > 1, use DataParallel wrapper
