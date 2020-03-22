@@ -31,7 +31,7 @@ class LocalEncoder(nn.Module):
             nn.ReLU(inplace=True),
             # state size (256) x 23 x 23
             nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=1, bias=False),
-            nn.BatchNorm2d(ndf * 4),
+            nn.BatchNorm2d(ndf * 8),
             nn.ReLU(inplace=True),
             # state size (512) x 20 x 20
         )
