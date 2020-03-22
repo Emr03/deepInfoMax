@@ -5,7 +5,7 @@ from models.encoders import *
 import math
 
 def mi_jsd(t_pos, t_neg):
-    return - torch.mean(math.log(2) - F.softplus(-t_pos) + math.log(2) - F.softplus(t_neg))
+    return torch.mean(F.softplus(-t_pos) + F.softplus(t_neg))
 
 class LocalDIM(nn.Module):
 
