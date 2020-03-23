@@ -7,7 +7,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
 
     parser = argparse.ArgumentParser()
 
-    # optimizer settings
+    # optimizer settings, shared between DIM and classification
     parser.add_argument('--opt', default=opt)
     parser.add_argument('--momentum', type=float, default=momentum)
     parser.add_argument('--weight_decay', type=float, default=weight_decay)
@@ -16,9 +16,14 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument("--lr", type=float, default=lr)
     parser.add_argument('--gpu', action='store_true')
 
-    # DIM arguments
+    # DIM arguments, note that global_dim is also used to select the encoder used for classification
     parser.add_argument('--global_dim', action="store_true")
     parser.add_argument('--nce', action='store_true')
+
+    # Classifier arguments
+    parser.add_argument('--input_layer', default='fc')
+    parser.add_argument('--hidden_units', type=int, default=1024)
+    parser.add_argument('--encoder_ckpt', type=str, default=None)
 
     # other arguments
     parser.add_argument('--prefix')

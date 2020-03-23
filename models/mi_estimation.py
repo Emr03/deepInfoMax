@@ -7,6 +7,10 @@ import math
 def mi_jsd(t_pos, t_neg):
     return torch.mean(F.softplus(-t_pos) + F.softplus(t_neg))
 
+def mi_nce(t_pos, t_neg):
+    # TODO
+    pass
+
 class LocalDIM(nn.Module):
 
     def __init__(self, global_encoder, type="JSD"):
