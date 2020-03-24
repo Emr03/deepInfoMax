@@ -32,20 +32,19 @@ if __name__ == "__main__":
     else:
         DIM = LocalDIM(encoder)
 
-    if len(args.cuda_ids) > 1:
-        DIM = nn.DataParallel(DIM)
+    DIM = nn.DataParallel(DIM)
 
     DIM = DIM.to(args.device)
-    enc_opt = optim.Adam(DIM.global_encoder.parameters(), lr=args.lr)
-    T_opt = optim.Adam(DIM.T.parameters(), lr=args.lr)
+    enc_opt = optim.Adam(DIM.module.global_encoder.parameters(), lr=args.lr)
+    T_opt = optim.Adam(DIM.module.T.parameters(), lr=args.lr)
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
         loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu)
         e += 1
         torch.save({
-            'encoder_state_dict': DIM.global_encoder.state_dict(),
-            'discriminator_state_dict': DIM.T.state_dict(),
+            'encoder_state_dict': DIM.module.global_encoder.state_dict(),
+            'discriminator_state_dict': DIM.module.T.state_dict(),
             'epoch': e,
             'enc_opt': enc_opt.state_dict(),
             'T_opt': T_opt.state_dict(),
