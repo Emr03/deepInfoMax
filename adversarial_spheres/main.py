@@ -7,9 +7,10 @@ def generate(batch_size, R, d):
     # sample x from N(0, I) and normalize
     x = torch.randn(size=(batch_size, d))
     norm = torch.norm(x, p=2, dim=-1, keepdim=True).repeat(1, d)
+    x = x / norm
 
     # sample binary labels and scale accordingly
-    y = torch.randint(size=(batch_size, 1), low=0, high=2) * 1.0
+    y = torch.randint(size=(batch_size, 1), low=0, high=2).float()
     x = x + (R - 1) * y * x # if y = 0 x, else R * x
     return x, y
 

@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     encoder = GlobalEncoder()
     # load encoder from checkpoint
-    encoder.load_state_dict(torch.load(args.encoder_ckpt).state_dict)
+    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
     # create classifier
     if args.input_layer == "fc":
         classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
@@ -39,24 +39,23 @@ if __name__ == "__main__":
     elif args.input_layer == "y":
         classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
-    if len(args.cuda_ids) > 1:
-        classifier = nn.DataParallel(classifier)
+    # if args.cuda_ids and len(args.cuda_ids) > 1:
+    #     classifier = nn.DataParallel(classifier)
 
     classifier = classifier.to(args.device)
 
-    opt = optim.Adam(classifier.module.parameters(), lr=args.lr)
+    opt = optim.Adam(classifier.parameters(), lr=args.lr)
 
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
-        loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu)
+        loss = train_eval.train_classifier(train_loader, classifier, opt, e,
+                                           train_log, verbose=args.verbose, gpu=args.gpu)
         e += 1
         torch.save({
-            'encoder_state_dict': DIM.global_encoder.state_dict(),
-            'discriminator_state_dict': DIM.T.state_dict(),
+            'classifier_state_dict': classifier.state_dict(),
             'epoch': e,
-            'enc_opt': enc_opt.state_dict(),
-            'T_opt': T_opt.state_dict(),
+            'opt': opt.state_dict(),
             'loss': loss,
         }, args.prefix + "_checkpoint.pth")
 

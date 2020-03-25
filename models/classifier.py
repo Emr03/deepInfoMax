@@ -15,7 +15,7 @@ def unfreeze_weights(model):
 class ClassifierConv(nn.Module):
 
     def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
-
+        super(ClassifierConv, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.local_encoder.output_size
@@ -39,6 +39,7 @@ class ClassifierConv(nn.Module):
 class ClassifierFC(nn.Module):
 
     def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
+        super(ClassifierFC, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.local_encoder.output_size
@@ -54,6 +55,7 @@ class ClassifierFC(nn.Module):
 
     def forward(self, X):
         C, E = self.encoder(X)
+        C = nn.Flatten()(C)
         return self.model(C)
 
     def train(self):
@@ -62,6 +64,7 @@ class ClassifierFC(nn.Module):
 class ClassifierY(nn.Module):
 
     def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
+        super(ClassifierY, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.output_size
