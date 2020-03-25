@@ -52,6 +52,8 @@ if __name__ == "__main__":
         loss = train_eval.train_classifier(train_loader, classifier, opt, e,
                                            train_log, verbose=args.verbose, gpu=args.gpu)
         e += 1
+
+        train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose, gpu=args.gpu)
         torch.save({
             'classifier_state_dict': classifier.state_dict(),
             'epoch': e,
