@@ -61,7 +61,7 @@ def pgd(model, X, y, epsilon, alpha, num_steps, random_restart=False, p=2):
     print("grad", delta.requires_grad)
     for n in range(num_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
-        loss = nn.CrossEntropyLoss()(model(X + delta, y), y)
+        loss = nn.CrossEntropyLoss()(model(X + delta), y)
         loss.backward(retain_graph=True)
         grad = delta.grad.detach()
         # print("grad", grad)

@@ -1,7 +1,7 @@
 from torch.autograd import Variable
 import time
 import torch.nn as nn
-from GreedyInfoMax.vision.attacks.gradient_untargeted import *
+from attacks.gradient_untargeted import *
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -21,7 +21,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def evaluate_adversarial(opt, model, loader):
+def evaluate_adversarial(args, model, loader):
     """
     Only implements adversarial attacks on classification for now
     :param opt:
@@ -41,16 +41,17 @@ def evaluate_adversarial(opt, model, loader):
     for i, (X, y) in enumerate(loader):
         # if opt.gpu:
         #     X, y = X.cuda(), y.cuda()
-        out = model(Variable(X), y)
+        out = model(Variable(X))
         ce_clean = nn.CrossEntropyLoss()(out, Variable(y))
         err_clean = (out.data.max(1)[1] != y).float().sum() / X.size(0)
 
         # adv samples
-        if opt.attack == "pgd":
-            X_adv, delta, out, out_adv = pgd(model=model, X=X, y=y, epsilon=opt.epsilon, alpha=opt.alpha, num_steps=opt.num_steps)
+        if args.attack == "pgd":
+            X_adv, delta, out, out_adv = pgd(model=model, X=X, y=y, epsilon=args.epsilon,
+                                             alpha=args.alpha, num_steps=args.num_steps)
 
-        elif opt.attack == "fgsm":
-            X_adv, delta, out, out_adv = fgsm(model=model, X=X, y=y, epsilon=opt.epsilon)
+        elif args.attack == "fgsm":
+            X_adv, delta, out, out_adv = fgsm(model=model, X=X, y=y, epsilon=args.epsilon)
 
         X = Variable(X + delta)
         out = model(Variable(X))
@@ -58,7 +59,7 @@ def evaluate_adversarial(opt, model, loader):
         err_adv = (out.data.max(1)[1] != y).float().sum() / X.size(0)
 
         # print to logfile
-        print("attack: ", opt.attack, " clean loss: ", ce_clean.item(),
+        print("attack: ", args.attack, " clean loss: ", ce_clean.item(),
               " clean_error: ", err_clean,
               " adv_err: ", err_adv,
               " clean_err: ", err_clean)

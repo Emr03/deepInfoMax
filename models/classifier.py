@@ -36,6 +36,9 @@ class ClassifierConv(nn.Module):
     def train(self):
         self.model.train()
 
+    def eval(self):
+        self.model.eval()
+
 class ClassifierFC(nn.Module):
 
     def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
@@ -61,6 +64,9 @@ class ClassifierFC(nn.Module):
     def train(self):
         self.model.train()
 
+    def eval(self):
+        self.model.eval()
+
 class ClassifierY(nn.Module):
 
     def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
@@ -83,6 +89,9 @@ class ClassifierY(nn.Module):
 
     def train(self):
         self.model.train()
+
+    def eval(self):
+        self.model.eval()
 
 
 

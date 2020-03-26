@@ -1,5 +1,3 @@
-"""DCGAN code from pytorch examples adapted for deep infomax. The encoder is modeled after the discrimintor of DCGAN"""
-
 import torch
 import torch.nn as nn
 
