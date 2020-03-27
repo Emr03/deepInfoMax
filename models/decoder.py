@@ -39,7 +39,6 @@ class DecoderY(nn.Module):
     def forward(self, x):
         z = self.pre_tconv(x)
         z = z.reshape(-1, 1, 16, 16)
-        print(z.shape)
         out = self.tconv_model(z)
         return out
 

@@ -145,7 +145,6 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    errors = AverageMeter()
     decoder.train()
     encoder.eval()
 
@@ -168,7 +167,7 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
         end = time.time()
         losses.update(loss.item(), X.size(0))
 
-        batch.set_description("Epoch {} Loss {} Err {} ".format(epoch, losses.avg, errors.avg))
+        batch.set_description("Epoch {} Loss {}".format(epoch, losses.avg))
         if verbose and i % verbose == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'

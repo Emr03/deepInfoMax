@@ -32,16 +32,17 @@ if __name__ == "__main__":
     encoder = encoder.to(args.device)
 
     decoder = DecoderY(input_size=encoder.output_size)
+    decoder = decoder.to(args.device)
     opt = optim.Adam(decoder.parameters(), lr=args.lr)
 
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
-        loss = train_eval.train_decoder(train_loader, decoder, opt, e,
+        loss = train_eval.train_decoder(train_loader, encoder, decoder, opt, e,
                                            train_log, verbose=args.verbose, gpu=args.gpu)
         e += 1
 
-        train_eval.eval_decoder(test_loader, decoder, e, test_log, verbose=args.verbose, gpu=args.gpu)
+        #train_eval.eval_decoder(test_loader, decoder, e, test_log, verbose=args.verbose, gpu=args.gpu)
         torch.save({
             'decoder_state_dict': decoder.state_dict(),
             'epoch': e,
