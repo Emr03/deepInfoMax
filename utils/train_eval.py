@@ -29,7 +29,9 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu):
     model.train()
 
     end = time.time()
-    for i, (X,y) in enumerate(loader):
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+
+    for i, (X,y) in enumerate(batch):
         if gpu:
             X,y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)
@@ -46,7 +48,7 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu):
         end = time.time()
         losses.update(loss.item(), X.size(0))
 
-        print(epoch, i, loss.item())
+        batch.set_description("Epoch {} Loss {} ".format(epoch, losses.avg))
         if verbose and i % verbose == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
