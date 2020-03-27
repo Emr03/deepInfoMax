@@ -2,7 +2,7 @@ import argparse
 import os
 import torch
 
-def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
+def argparser(batch_size=1, epochs=1000, seed=0, verbose=1, lr=1e-4,
               opt='adam', momentum=0.9, weight_decay=5e-4):
 
     parser = argparse.ArgumentParser()
@@ -28,7 +28,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     # attack arguments
     parser.add_argument('--classifier_ckpt', type=str, default=None)
     parser.add_argument('--attack', type=str, default="pgd")
-    parser.add_argument('--epsilon', type=float, default=0.3)
+    parser.add_argument('--epsilon', type=float, default=0.03)
     parser.add_argument('--alpha', type=float, default=0.01)
     parser.add_argument('--num_steps', type=int, default=1000)
 

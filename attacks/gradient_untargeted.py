@@ -27,7 +27,7 @@ def get_projected_step(delta, g, p, epsilon, alpha):
 
 def fgsm(model, X, y, epsilon):
     delta = torch.zeros_like(X, requires_grad=True)
-    loss = nn.CrossEntropyLoss()(model(X + delta, y), y)
+    loss = nn.CrossEntropyLoss()(model(X + delta), y)
     #loss = loss_fn(model(X + delta), y)
     loss.backward()
     perturbation = epsilon * delta.grad.detach().sign()

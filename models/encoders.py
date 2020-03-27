@@ -33,6 +33,7 @@ class LocalEncoder(nn.Module):
             nn.ReLU(inplace=True),
             # state size (512) x 20 x 20
         )
+
         self.output_shape = [ndf * 8, 20, 20]
         self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
 

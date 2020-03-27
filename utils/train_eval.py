@@ -140,3 +140,43 @@ def eval_classifier(loader, model, epoch, log, verbose, gpu):
 
     return losses.avg
 
+def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    errors = AverageMeter()
+    decoder.train()
+    encoder.eval()
+
+    end = time.time()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+        if gpu:
+            X, y = X.cuda(), y.cuda()
+        data_time.update(time.time() - end)
+
+        C, E = encoder(X)
+        R = decoder(E)
+        loss = nn.MSELoss()(input=R, target=X)
+
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+
+        batch_time.update(time.time()-end)
+        end = time.time()
+        losses.update(loss.item(), X.size(0))
+
+        batch.set_description("Epoch {} Loss {} Err {} ".format(epoch, losses.avg, errors.avg))
+        if verbose and i % verbose == 0:
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                epoch, i, len(loader), batch_time=batch_time,
+                data_time=data_time, loss=losses), file=log)
+
+        log.flush()
+
+    return losses.avg

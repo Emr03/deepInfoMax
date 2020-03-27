@@ -85,7 +85,7 @@ class ClassifierY(nn.Module):
 
     def forward(self, X):
         C, E = self.encoder(X)
-        return self.model(C)
+        return self.model(E)
 
     def train(self):
         self.model.train()
