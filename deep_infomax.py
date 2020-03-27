@@ -25,7 +25,7 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder()
+    encoder = GlobalEncoder(stride=args.encoder_stride)
     if args.global_dim:
         DIM = GlobalDIM(encoder)
 
