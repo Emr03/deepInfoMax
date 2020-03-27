@@ -15,20 +15,24 @@ def weights_init(m):
 class LocalEncoder(nn.Module):
     def __init__(self, num_channels=3, ndf=64, stride=1, input_size=32):
         super(LocalEncoder, self).__init__()
+        if stride == 2:
+            padding=1
+        else:
+            padding=0
         self.main = nn.Sequential(
             # input is (nc) x 32 x 32
-            nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, bias=False),
+            nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
             nn.ReLU(inplace=True),
             # state size. 64 x 29 x 29, or 16 x 16
-            nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, bias=False),
+            nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
             nn.BatchNorm2d(ndf * 2),
             nn.ReLU(inplace=True),
             # state size. 128 x 26 x 26 or 8 x 8
-            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, bias=False),
+            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, padding=padding, bias=False),
             nn.BatchNorm2d(ndf * 4),
             nn.ReLU(inplace=True),
             # state size (256) x 23 x 23 or 4 x 4
-            nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=stride, bias=False),
+            nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=stride, padding=padding, bias=False),
             nn.BatchNorm2d(ndf * 8),
             nn.ReLU(inplace=True),
             # state size (512) x 20 x 20
@@ -57,10 +61,12 @@ class GlobalEncoder(nn.Module):
 
     def forward(self, input):
         C = self.local_encoder(input)
-        enc_input = torch.nn.Flatten()(C)
-        E = self.fc_net(enc_input)
-        return C, E.squeeze()
+        print("C shape" , C.shape)
+        #enc_input = torch.nn.Flatten()(C)
+        #E = self.fc_net(enc_input)
+        #return C, E.squeeze()
 
-netD = GlobalEncoder()
+netD = GlobalEncoder(stride=2)
 netD.apply(weights_init)
-print(netD)
+X = torch.randn((132, 3, 32, 32))
+netD(X)

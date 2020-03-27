@@ -19,6 +19,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     # DIM arguments, note that global_dim is also used to select the encoder used for classification
     parser.add_argument('--global_dim', action="store_true")
     parser.add_argument('--nce', action='store_true')
+    parser.add_argument('--encoder_stride', type=int, default=1)
 
     # Classifier arguments
     parser.add_argument('--input_layer', default='fc')
