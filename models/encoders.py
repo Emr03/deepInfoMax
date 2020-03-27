@@ -28,15 +28,18 @@ class LocalEncoder(nn.Module):
             nn.BatchNorm2d(ndf * 2),
             nn.ReLU(inplace=True),
             # state size. 128 x 26 x 26 or 8 x 8
-            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, padding=padding, bias=False),
-            nn.BatchNorm2d(ndf * 4),
+            nn.Conv2d(ndf * 2, ndf * 4 * stride, kernel_size=4, stride=stride, padding=padding, bias=False),
+            nn.BatchNorm2d(ndf * 4 * stride),
             nn.ReLU(inplace=True),
-            # state size (256) x 23 x 23 or 4 x 4
-            nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=stride, padding=padding, bias=False),
-            nn.BatchNorm2d(ndf * 8),
-            nn.ReLU(inplace=True),
-            # state size (512) x 20 x 20
-        )
+            # state size (256) x 23 x 23 or 512 x 4 x 4
+            )
+
+        if stride == 1:
+            self.main.add_module(nn.Sequential(
+                nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 8),
+                nn.ReLU(inplace=True)
+            ))
 
         if stride == 1:
             self.output_shape = [ndf * 8, 20, 20]
@@ -61,10 +64,10 @@ class GlobalEncoder(nn.Module):
 
     def forward(self, input):
         C = self.local_encoder(input)
-        print("C shape" , C.shape)
-        #enc_input = torch.nn.Flatten()(C)
-        #E = self.fc_net(enc_input)
-        #return C, E.squeeze()
+        # print("C shape" , C.shape)
+        enc_input = torch.nn.Flatten()(C)
+        E = self.fc_net(enc_input)
+        return C, E.squeeze()
 
 netD = GlobalEncoder(stride=2)
 netD.apply(weights_init)
