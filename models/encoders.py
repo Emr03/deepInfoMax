@@ -16,35 +16,43 @@ class LocalEncoder(nn.Module):
     def __init__(self, num_channels=3, ndf=64, stride=1, input_size=32):
         super(LocalEncoder, self).__init__()
         if stride == 2:
-            padding=1
-        else:
-            padding=0
-        self.main = nn.Sequential(
-            # input is (nc) x 32 x 32
-            nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
-            nn.ReLU(inplace=True),
-            # state size. 64 x 29 x 29, or 16 x 16
-            nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
-            nn.BatchNorm2d(ndf * 2),
-            nn.ReLU(inplace=True),
-            # state size. 128 x 26 x 26 or 8 x 8
-            nn.Conv2d(ndf * 2, ndf * 4 * stride, kernel_size=4, stride=stride, padding=padding, bias=False),
-            nn.BatchNorm2d(ndf * 4 * stride),
-            nn.ReLU(inplace=True),
-            # state size (256) x 23 x 23 or 512 x 4 x 4
+            padding = 1
+            self.main = nn.Sequential(
+                # input is (nc) x 32 x 32
+                nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.ReLU(inplace=True),
+                # state size. 64 x 29 x 29, or 16 x 16
+                nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 2),
+                nn.ReLU(inplace=True),
+                # state size. 128 x 26 x 26 or 8 x 8
+                nn.Conv2d(ndf * 2, ndf * 4 * stride, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 4 * stride),
+                nn.ReLU(inplace=True),
+                # state size (256) x 23 x 23 or 512 x 4 x 4
             )
+            self.output_shape = [ndf * 8, 4, 4]
 
-        if stride == 1:
-            self.main.add_module(nn.Sequential(
+        else:
+            padding = 0
+            self.main = nn.Sequential(
+                # input is (nc) x 32 x 32
+                nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.ReLU(inplace=True),
+                # state size. 64 x 29 x 29,
+                nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 2),
+                nn.ReLU(inplace=True),
+                # state size. 128 x 26 x 26
+                nn.Conv2d(ndf * 2, ndf * 4 * stride, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 4 * stride),
+                nn.ReLU(inplace=True),
+                # state size (256) x 23 x 23
                 nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=stride, padding=padding, bias=False),
                 nn.BatchNorm2d(ndf * 8),
                 nn.ReLU(inplace=True)
-            ))
-
-        if stride == 1:
+                )
             self.output_shape = [ndf * 8, 20, 20]
-        elif stride == 2:
-            self.output_shape = [ndf * 8, 4, 4]
 
         self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
 
