@@ -19,7 +19,7 @@ class ClassifierConv(nn.Module):
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.local_encoder.output_size
-        self.model = nn.Sequential(F.flatten(),
+        self.model = nn.Sequential(nn.Flatten(),
                                    nn.Linear(self.input_size, hidden_units),
                                    nn.ReLU(),
                                    nn.Linear(hidden_units, num_classes))
