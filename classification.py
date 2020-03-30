@@ -26,7 +26,7 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder()
+    encoder = GlobalEncoder(stride=args.encoder_stride)
     # load encoder from checkpoint
     encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
     # create classifier

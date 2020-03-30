@@ -26,7 +26,7 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder()
+    encoder = GlobalEncoder(stride=args.encoder_stride)
     # load encoder from checkpoint
     encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
     encoder = encoder.to(args.device)
@@ -34,13 +34,15 @@ if __name__ == "__main__":
     decoder = DecoderY(input_size=encoder.output_size)
     decoder = decoder.to(args.device)
     opt = optim.Adam(decoder.parameters(), lr=args.lr)
-
+    
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[50, 100], gamma=0.1)
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
         loss = train_eval.train_decoder(train_loader, encoder, decoder, opt, e,
                                            train_log, verbose=args.verbose, gpu=args.gpu)
         e += 1
+        scheduler.step()
 
         #train_eval.eval_decoder(test_loader, decoder, e, test_log, verbose=args.verbose, gpu=args.gpu)
         torch.save({
