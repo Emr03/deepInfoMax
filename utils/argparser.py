@@ -25,6 +25,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument('--input_layer', default='fc')
     parser.add_argument('--hidden_units', type=int, default=1024)
     parser.add_argument('--encoder_ckpt', type=str, default=None)
+    parser.add_argument('--fully_supervised', action="store_true")
 
     # attack arguments
     parser.add_argument('--classifier_ckpt', type=str, default=None)
