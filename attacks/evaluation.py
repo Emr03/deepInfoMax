@@ -39,8 +39,8 @@ def evaluate_adversarial(args, model, loader):
 
     end = time.time()
     for i, (X, y) in enumerate(loader):
-        # if opt.gpu:
-        #     X, y = X.cuda(), y.cuda()
+        if args.gpu:
+            X, y = X.cuda(), y.cuda()
         out = model(Variable(X))
         ce_clean = nn.CrossEntropyLoss()(out, Variable(y))
         err_clean = (out.data.max(1)[1] != y).float().sum() / X.size(0)
@@ -48,7 +48,7 @@ def evaluate_adversarial(args, model, loader):
         # adv samples
         if args.attack == "pgd":
             X_adv, delta, out, out_adv = pgd(model=model, X=X, y=y, epsilon=args.epsilon,
-                                             alpha=args.alpha, num_steps=args.num_steps)
+                                             alpha=args.alpha, num_steps=args.num_steps, p='inf')
 
         elif args.attack == "fgsm":
             X_adv, delta, out, out_adv = fgsm(model=model, X=X, y=y, epsilon=args.epsilon)

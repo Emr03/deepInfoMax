@@ -15,7 +15,6 @@ def get_projected_step(delta, g, p, epsilon, alpha):
     if p == 2:
         print(g.shape, delta.shape)
         v = alpha * g / torch.norm(g, p='fro', dim=(-1, -2), keepdim=True).repeat(1, 1, g.shape[-2], g.shape[-1])
-        print(v.shape)
         delta = epsilon * (delta + v) / torch.norm(g, p='fro', dim=(-1, -2), keepdim=True).repeat(1, 1, g.shape[-2], g.shape[-1])
 
     elif p == 'inf':
