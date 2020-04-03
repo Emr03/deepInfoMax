@@ -8,14 +8,24 @@ from utils import data_loaders
 from utils import train_eval
 import random
 import numpy as np
+import os
+import json
 
 if __name__ == "__main__":
 
     args = argparser()
     print("saving file to {}".format(args.prefix))
 
-    train_log = open(args.prefix + "_train.log", "w")
-    test_log = open(args.prefix + "_test.log", "w")
+    # create workspace
+    workspace_dir = "experiments/{}".format(args.prefix)
+    if not os.path.isdir(workspace_dir):
+        os.mkdir(workspace_dir)
+
+    # save arguments as json file
+    json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
+
+    train_log = open("{}/train.log".format(workspace_dir), "w")
+    test_log = open("{}/test.log".format(workspace_dir), "w")
 
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
@@ -27,10 +37,10 @@ if __name__ == "__main__":
 
     encoder = GlobalEncoder(stride=args.encoder_stride)
     if args.global_dim:
-        DIM = GlobalDIM(encoder)
+        DIM = GlobalDIM(encoder, type=args.mi_estimator)
 
     else:
-        DIM = LocalDIM(encoder)
+        DIM = LocalDIM(encoder, type=args.mi_estimator)
 
     DIM = nn.DataParallel(DIM)
 

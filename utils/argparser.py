@@ -17,15 +17,18 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument('--gpu', action='store_true')
 
     # DIM arguments, note that global_dim is also used to select the encoder used for classification
+    # TODO: add architecture options
     parser.add_argument('--global_dim', action="store_true")
-    parser.add_argument('--nce', action='store_true')
     parser.add_argument('--encoder_stride', type=int, default=1)
+    parser.add_argument('--mi_estimator', type=str, default="JSD")
+    parser.add_argument('--decoder_ckpt', type=str, default=None)
 
     # Classifier arguments
     parser.add_argument('--input_layer', default='fc')
     parser.add_argument('--hidden_units', type=int, default=1024)
     parser.add_argument('--encoder_ckpt', type=str, default=None)
     parser.add_argument('--fully_supervised', action="store_true")
+    parser.add_argument('--classifier_adversarial', action="store_true")
 
     # attack arguments
     parser.add_argument('--classifier_ckpt', type=str, default=None)
