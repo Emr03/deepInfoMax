@@ -48,7 +48,7 @@ if __name__ == "__main__":
         classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
     # load classifier from checkpoint
-    classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"])
+    classifier.load_state_dict(torch.load(args.classifier_ckpt, map_location=torch.device("cpu"))["classifier_state_dict"])
 
     # if args.cuda_ids and len(args.cuda_ids) > 1:
     #     classifier = nn.DataParallel(classifier)

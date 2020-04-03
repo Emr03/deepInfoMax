@@ -182,6 +182,7 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
 
     return losses.avg
 
+
 def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, args, gamma=0.9):
 
     batch_time = AverageMeter()
@@ -208,6 +209,7 @@ def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, a
         if args.attack == "pgd":
             X_adv, delta, out, out_adv = pgd(model=model, X=X, y=y, epsilon=args.epsilon,
                                              alpha=args.alpha, num_steps=args.num_steps, p="inf")
+                                             alpha=args.alpha, num_steps=args.num_steps)
 
         elif args.attack == "fgsm":
             X_adv, delta, out, out_adv = fgsm(model=model, X=X, y=y, epsilon=args.epsilon)
@@ -221,23 +223,27 @@ def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, a
         opt.zero_grad()
         ce_total.backward()
         opt.step()
-
+        
         # measure accuracy and record loss
         clean_losses.update(ce_clean.item(), X.size(0))
         clean_errors.update(err_clean, X.size(0))
         adv_losses.update(ce_adv.item(), X.size(0))
         adv_errors.update(err_adv, X.size(0))
         
+        batch.set_description("clean loss: {}, "
+                              "adv loss: {}, "
+                              "clean_err: {}, "
+                              "adv_err: {}, ".format(ce_clean.item(), ce_adv.item(), err_clean, err_adv))
+
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
-    
-        batch.set_description("clean_err: {}, adv_err: {}".format(clean_errors.avg, adv_errors.avg), refresh=True)
-    
-    print(' Epoch {epoch}:\t  Clean Error {clean_error.avg:.3f}\t'
+
+    print(' Epoch {epoch}:\t Clean Error {clean_error.avg:.3f}\t'
           ' Adv Error {adv_errors.avg:.3f}\t'
-          .format(epoch=epoch, clean_error=clean_errors, adv_errors=adv_errors), file=log)
+          .format(clean_error=clean_errors, adv_errors=adv_errors), file=log)
+    
     log.flush()
-    return adv_losses.avg
+    return clean_errors.avg
 
 
