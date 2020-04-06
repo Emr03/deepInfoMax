@@ -209,7 +209,6 @@ def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, a
         if args.attack == "pgd":
             X_adv, delta, out, out_adv = pgd(model=model, X=X, y=y, epsilon=args.epsilon,
                                              alpha=args.alpha, num_steps=args.num_steps, p="inf")
-                                             alpha=args.alpha, num_steps=args.num_steps)
 
         elif args.attack == "fgsm":
             X_adv, delta, out, out_adv = fgsm(model=model, X=X, y=y, epsilon=args.epsilon)

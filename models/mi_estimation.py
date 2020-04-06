@@ -8,7 +8,7 @@ def mi_jsd(t_pos, t_neg):
     return torch.mean(F.softplus(-t_pos) + F.softplus(t_neg))
 
 def mi_dv(t_pos, t_neg):
-    return torch.mean(t_pos) - torch.log(torch.mean(torch.exp(t_neg)))
+    return -torch.mean(t_pos) + torch.log(torch.mean(torch.exp(t_neg)))
 
 def mi_nce(t_pos, t_neg):
     # TODO
@@ -16,17 +16,17 @@ def mi_nce(t_pos, t_neg):
 
 class LocalDIM(nn.Module):
 
-    def __init__(self, global_encoder, type="JSD"):
+    def __init__(self, global_encoder, type="jsd"):
         super(LocalDIM, self).__init__()
         self.global_encoder = global_encoder
 
-        if type == "JSD":
+        if type == "jsd":
             self.mi_fn = mi_jsd
 
-        elif type == "DV":
+        elif type == "dv":
             self.mi_fn = mi_dv
 
-        elif type == "NCE":
+        elif type == "nce":
             self.mi_fn = mi_nce
 
         # TODO type == "W"
@@ -79,7 +79,7 @@ class LocalDIM(nn.Module):
 
 class GlobalDIM(nn.Module):
 
-    def __init__(self, global_encoder, type="JSD"):
+    def __init__(self, global_encoder, type="jsd"):
         super(GlobalDIM, self).__init__()
         self.global_encoder = global_encoder
         input_size = self.global_encoder.local_encoder.output_size

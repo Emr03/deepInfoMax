@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=example_job
-#SBATCH --output=/my/output/dir/%j.out
-#SBATCH --error=/my/output/dir/%j.err
+#SBATCH --output=example_job/log/%j.out
+#SBATCH --error=example_job/log/%j.err
 #SBATCH --open-mode=append
-#SBATCH --partition=gpu
+#SBATCH --partition=p100
 #SBATCH --cpus-per-task=4
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=22G
@@ -11,4 +11,4 @@
 #SBATCH --nodes=1
 #SBATCH --qos=normal
 
-bash example_job.sh
+bash slurm_scripts/example_job.sh

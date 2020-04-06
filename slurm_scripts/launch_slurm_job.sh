@@ -28,8 +28,8 @@ bash ${j_dir}/scripts/${j_name}.sh
 
 # build bash script
 echo -n "#!/bin/bash
-ln -s /checkpoint/$USER/\$SLURM_JOB_ID ${j_dir}/\$SLURM_JOB_ID
-touch ${j_dir}/\$SLURM_JOB_ID/DELAYPURGE
+. /h/elsinator/miniconda3/etc/profile.d/conda.sh
+conda activate infomax
 $cmd
 " > $j_dir/scripts/${j_name}.sh
 

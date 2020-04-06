@@ -19,10 +19,11 @@ if __name__ == "__main__":
     # create workspace
     workspace_dir = "experiments/{}".format(args.prefix)
     if not os.path.isdir(workspace_dir):
-        os.mkdir(workspace_dir)
+        os.makedirs(workspace_dir, exist_ok=True)
 
     # save arguments as json file
-    json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
+    #with open("{}_args".format(workspace_dir), "w") as f:
+    #    json.dump(obj=args.__dict__, indent=4, fp=f)
 
     train_log = open("{}/train.log".format(workspace_dir), "w")
     test_log = open("{}/test.log".format(workspace_dir), "w")
@@ -59,7 +60,7 @@ if __name__ == "__main__":
             'enc_opt': enc_opt.state_dict(),
             'T_opt': T_opt.state_dict(),
             'loss': loss,
-        }, args.prefix + "_checkpoint.pth")
+        }, workspace_dir + "/" + args.prefix + "_checkpoint.pth")
 
 
 
