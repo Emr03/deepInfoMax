@@ -8,11 +8,13 @@ def mi_jsd(t_pos, t_neg):
     return torch.mean(F.softplus(-t_pos) + F.softplus(t_neg))
 
 def mi_dv(t_pos, t_neg):
-    return -torch.mean(t_pos) + torch.log(torch.mean(torch.exp(t_neg)))
+    # for numerical stability
+    t_neg_max = t_neg.max()
+    return -torch.mean(t_pos) + \
+           torch.log(torch.mean(torch.exp(t_neg - t_neg_max))) + t_neg_max  
 
 def mi_nce(t_pos, t_neg):
-    # TODO
-    pass
+    return -torch.mean(t_pos) + torch.mean(torch.log(torch.sum(torch.exp(t_neg))))
 
 class LocalDIM(nn.Module):
 
@@ -65,14 +67,28 @@ class LocalDIM(nn.Module):
         # pass C, E positive pairs through 1x1 conv layers to obtain a scalar
         pos_T = self.T(EC)
 
-        # form negative pairs, and concatenate with E
-        # TODO: remove positive pairs
-        idx = torch.randperm(C.shape[0])
-        C_neg = C[idx]
-        EC_neg = torch.cat([E, C_neg], dim=1)
+        # Each element along the batch dimension in C should be mapped with every negative element in E
+        batch_size = C.shape[0]
+        k = C.shape[2]
+        d = E.shape[1]
+
+        # E has shape (batch_size, dim, k, k) -> (dim, batch_size, k*k) -> (dim, batch_size * k * k)
+        E = E.reshape(batch_size, -1, k * k).transpose(1, 0).reshape(-1, batch_size * k * k)
+        C = C.reshape(batch_size, -1, k * k).transpose(1, 0).reshape(-1, batch_size * k * k)
+
+        # Add dim to E and C, repeat the batch batch_size * k * k times, to obtain N * N samples
+        E = E.unsqueeze(2).repeat(1, 1, batch_size * k * k)
+        C = C.unsqueeze(1).repeat(1, batch_size * k * k, 1)
+        N = batch_size * k * k
+
+        # concatentate, note that EC[:, i, i] are the positive samples
+        # shape = (1, num_channels + dim, N, N)
+        EC = torch.cat([C, E], dim=0).unsqueeze(0)
 
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
-        neg_T = self.T(EC_neg)
+        neg_T = self.T(EC)
+        del EC
+        torch.cuda.empty_cache()
 
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
         return self.mi_fn(pos_T, neg_T)

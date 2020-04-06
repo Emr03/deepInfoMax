@@ -36,7 +36,7 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu):
             X, y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)
 
-        loss = model(X)
+        loss = model(X).mean()
 
         enc_opt.zero_grad()
         T_opt.zero_grad()
