@@ -5,7 +5,7 @@ from models.encoders import *
 import math
 
 def mi_jsd(t_pos, t_neg):
-    return torch.mean(F.softplus(-t_pos) + F.softplus(t_neg))
+    return torch.mean(F.softplus(-t_pos)) + torch.mean(F.softplus(t_neg))
 
 def mi_dv(t_pos, t_neg):
     # for numerical stability
