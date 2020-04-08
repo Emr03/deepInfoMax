@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # create workspace
     workspace_dir = "experiments/{}".format(args.prefix)
     if not os.path.isdir(workspace_dir):
-        os.mkdir(workspace_dir)
+        os.makedirs(workspace_dir, exist_ok=True)
 
     # save arguments as json file
     # json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
@@ -57,18 +57,21 @@ if __name__ == "__main__":
 
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
+    test_err = 1.0
     while e < args.epochs:
         loss = train_eval.train_classifier(train_loader, classifier, opt, e,
                                            train_log, verbose=args.verbose, gpu=args.gpu)
         e += 1
 
-        train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose, gpu=args.gpu)
-        torch.save({
-            'classifier_state_dict': classifier.state_dict(),
-            'epoch': e,
-            'opt': opt.state_dict(),
-            'loss': loss,
-        }, args.prefix + "_checkpoint.pth")
+        test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose, gpu=args.gpu)
+        if test_err > test_err_:
+            test_err = test_err_
+            torch.save({
+                'classifier_state_dict': classifier.state_dict(),
+                'epoch': e,
+                'opt': opt.state_dict(),
+                'loss': loss,
+            }, workspace_dir + "/" + args.prefix + "_checkpoint.pth")
 
 
 

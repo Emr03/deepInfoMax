@@ -5,13 +5,10 @@ from models.encoders import *
 import math
 
 def mi_jsd(t_pos, t_neg):
-    return torch.mean(F.softplus(-t_pos)) + torch.mean(F.softplus(t_neg))
+    return torch.mean(F.softplus(-t_pos)) + torch.mean(F.softplus(t_neg)))
 
 def mi_dv(t_pos, t_neg):
-    # for numerical stability
-    t_neg_max = t_neg.max()
-    return -torch.mean(t_pos) + \
-           torch.log(torch.mean(torch.exp(t_neg - t_neg_max))) + t_neg_max  
+    return -torch.mean(t_pos) + torch.log(torch.mean(torch.exp(t_neg)))
 
 def mi_nce(t_pos, t_neg):
     return -torch.mean(t_pos) + torch.mean(torch.log(torch.sum(torch.exp(t_neg))))
@@ -85,6 +82,10 @@ class LocalDIM(nn.Module):
         # shape = (1, num_channels + dim, N, N)
         EC = torch.cat([C, E], dim=0).unsqueeze(0)
 
+        # diagonal entries correspond to positive samples 
+        mask = 1 - torch.eye(N)
+        mask = mask.unsqueeze(0).unsqueeze(1)
+        
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
         neg_T = self.T(EC)
         del EC

@@ -19,10 +19,10 @@ if __name__ == "__main__":
     # create workspace
     workspace_dir = "experiments/{}".format(args.prefix)
     if not os.path.isdir(workspace_dir):
-        os.mkdir(workspace_dir)
+        os.makedirs(workspace_dir, exist_ok=True)
 
     # save arguments as json file
-    json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
+    # json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
 
     train_log = open("{}/train.log".format(workspace_dir), "w")
     test_log = open("{}/test.log".format(workspace_dir), "w")
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             'epoch': e,
             'opt': opt.state_dict(),
             'loss': loss,
-        }, args.prefix + "_checkpoint.pth")
+        }, workspace_dir + "/" + args.prefix + "_checkpoint.pth")
 
 
 
