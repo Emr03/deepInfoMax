@@ -7,7 +7,7 @@ import math
 
 class LocalDIM(nn.Module):
 
-    def __init__(self, global_encoder, type="jsd"):
+    def __init__(self, global_encoder, type="js"):
 
         super(LocalDIM, self).__init__()
         self.global_encoder = global_encoder
@@ -42,11 +42,6 @@ class LocalDIM(nn.Module):
         E = E.unsqueeze(2).unsqueeze(3)
         E = E.repeat(1, 1, C.shape[2], C.shape[3])
 
-        EC = torch.cat([E, C], dim=1)
-
-        # pass C, E positive pairs through 1x1 conv layers to obtain a scalar
-        pos_T = self.T(EC)
-
         # Each element along the batch dimension in C should be mapped with every negative element in E
         batch_size = C.shape[0]
         k = C.shape[2]
@@ -66,12 +61,12 @@ class LocalDIM(nn.Module):
         EC = torch.cat([C, E], dim=0).unsqueeze(0)
 
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
-        neg_T = self.T(EC)
+        T = self.T(EC).squeeze()
         del EC
         torch.cuda.empty_cache()
 
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
-        mi = estimate_mutual_information(estimator=type, scores=T, baseline_fn=None, alpha_logit=None)
+        mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
         return mi
 
 class GlobalDIM(nn.Module):
