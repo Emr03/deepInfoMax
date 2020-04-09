@@ -2,33 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.encoders import *
+from utils.mi_estimators import *
 import math
-
-def mi_jsd(t_pos, t_neg):
-    return torch.mean(F.softplus(-t_pos)) + torch.mean(F.softplus(t_neg)))
-
-def mi_dv(t_pos, t_neg):
-    return -torch.mean(t_pos) + torch.log(torch.mean(torch.exp(t_neg)))
-
-def mi_nce(t_pos, t_neg):
-    return -torch.mean(t_pos) + torch.mean(torch.log(torch.sum(torch.exp(t_neg))))
 
 class LocalDIM(nn.Module):
 
     def __init__(self, global_encoder, type="jsd"):
+
         super(LocalDIM, self).__init__()
         self.global_encoder = global_encoder
-
-        if type == "jsd":
-            self.mi_fn = mi_jsd
-
-        elif type == "dv":
-            self.mi_fn = mi_dv
-
-        elif type == "nce":
-            self.mi_fn = mi_nce
-
-        # TODO type == "W"
+        self.estimator = type
 
         # input_shape = num_channels of local encoder output
         input_shape = self.global_encoder.local_encoder.output_shape
@@ -82,17 +65,14 @@ class LocalDIM(nn.Module):
         # shape = (1, num_channels + dim, N, N)
         EC = torch.cat([C, E], dim=0).unsqueeze(0)
 
-        # diagonal entries correspond to positive samples 
-        mask = 1 - torch.eye(N)
-        mask = mask.unsqueeze(0).unsqueeze(1)
-        
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
         neg_T = self.T(EC)
         del EC
         torch.cuda.empty_cache()
 
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
-        return self.mi_fn(pos_T, neg_T)
+        mi = estimate_mutual_information(estimator=type, scores=T, baseline_fn=None, alpha_logit=None)
+        return mi
 
 class GlobalDIM(nn.Module):
 
