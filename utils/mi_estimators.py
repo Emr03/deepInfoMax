@@ -1,3 +1,4 @@
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -45,12 +46,8 @@ def tuba_lower_bound(scores, log_baseline=None):
     return 1. + joint_term - marg_term
 
 
-def nwj_lower_bound(t):
-    t_pos = t.diag()
-    N = t.shape[-1]
-    mask = torch.ones((N, N)) - torch.eye(N)
-    expectation = (torch.log(torch.exp(t - 1)) * mask).sum() / mask.sum()
-    return -torch.mean(t_pos) + expectation
+def nwj_lower_bound(scores):
+    return tuba_lower_bound(scores - 1.)
 
 
 def infonce_lower_bound(scores):
@@ -62,14 +59,14 @@ def infonce_lower_bound(scores):
     return mi
 
 
-def js_fgan_lower_bound(t):
+def js_fgan_lower_bound(f):
     """Lower bound on Jensen-Shannon divergence from Nowozin et al. (2016)."""
-    t_pos = t.diag()
-    N = t.shape[-1]
-    mask = torch.ones((N, N)) - torch.eye(N)
-    E_m = (F.softplus(t) * mask).sum() / mask.sum()
-    E_j = torch.mean(F.softplus(-t_pos))
-    return E_m - E_j
+    f_diag = f.diag()
+    first_term = -F.softplus(-f_diag).mean()
+    n = f.size(0)
+    second_term = (torch.sum(F.softplus(f)) -
+                   torch.sum(F.softplus(f_diag))) / (n * (n - 1.))
+    return first_term - second_term
 
 
 def js_lower_bound(f):
@@ -77,23 +74,21 @@ def js_lower_bound(f):
     nwj = nwj_lower_bound(f)
     js = js_fgan_lower_bound(f)
 
-    # backprop gradients through js to update critic, return MI based on NWJ
     with torch.no_grad():
         nwj_js = nwj - js
 
     return js + nwj_js
 
 
-def dv_upper_lower_bound(t):
+def dv_upper_lower_bound(f):
     """
     Donsker-Varadhan lower bound, but upper bounded by using log outside.
     Similar to MINE, but did not involve the term for moving averages.
     """
-    t_pos = t.diag()
-    N = t.shape[-1]
-    mask = torch.ones((N, N)) - torch.eye(N)
-    expectation = (torch.exp(t) * mask).sum() / mask.sum()
-    return -torch.mean(t_pos) + torch.log(expectation)
+    first_term = f.diag().mean()
+    second_term = logmeanexp_nodiag(f)
+
+    return first_term - second_term
 
 
 def mine_lower_bound(f, buffer=None, momentum=0.9):
@@ -130,7 +125,6 @@ def smile_lower_bound(f, clip=None):
         dv_js = dv - js
 
     return js + dv_js
-
 
 def estimate_mutual_information(estimator, scores,
                                 baseline_fn=None, alpha_logit=None, **kwargs):

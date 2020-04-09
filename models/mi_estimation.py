@@ -62,6 +62,7 @@ class LocalDIM(nn.Module):
 
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
         T = self.T(EC).squeeze()
+        T = self.T(EC)
         del EC
         torch.cuda.empty_cache()
 
