@@ -44,9 +44,6 @@ class LocalDIM(nn.Module):
 
         EC = torch.cat([E, C], dim=1)
 
-        # pass C, E positive pairs through 1x1 conv layers to obtain a scalar
-        pos_T = self.T(EC)
-
         # Each element along the batch dimension in C should be mapped with every negative element in E
         batch_size = C.shape[0]
         k = C.shape[2]
@@ -66,7 +63,7 @@ class LocalDIM(nn.Module):
         EC = torch.cat([C, E], dim=0).unsqueeze(0)
 
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
-        neg_T = self.T(EC)
+        T = self.T(EC)
         del EC
         torch.cuda.empty_cache()
 
