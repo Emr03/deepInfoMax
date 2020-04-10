@@ -62,10 +62,9 @@ class LocalDIM(nn.Module):
 
         # pass C, E negative pairs through 1x1 conv layers to obtain a scalar
         T = self.T(EC).squeeze()
-        T = self.T(EC)
         del EC
         torch.cuda.empty_cache()
-
+        print(T.shape)
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
         mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
         return mi
