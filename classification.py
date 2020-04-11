@@ -10,6 +10,7 @@ from utils import train_eval
 import random
 import numpy as np
 import json
+from attacks.evaluation import evaluate_adversarial
 
 if __name__ == "__main__":
 
@@ -59,18 +60,28 @@ if __name__ == "__main__":
     e = 0
     test_err = 1.0
     while e < args.epochs:
-        loss = train_eval.train_classifier(train_loader, classifier, opt, e,
-                                           train_log, verbose=args.verbose, gpu=args.gpu)
+        if args.classifier_adversarial:
+            loss = train_eval.train_classifier_adversarial(train_loader, classifier, opt, e, train_log,
+                                                           verbose=args.verbose, gpu=args.gpu, args=args)
+
+            clean_errors, adv_errors = evaluate_adversarial(args, classifier, test_loader)
+            test_err_ = adv_errors
+
+        else:
+            loss = train_eval.train_classifier(train_loader, classifier, opt, e,
+                                               train_log, verbose=args.verbose, gpu=args.gpu)
+
+            test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose,
+                                                   gpu=args.gpu)
         e += 1
 
-        test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose, gpu=args.gpu)
         if test_err > test_err_:
             test_err = test_err_
             torch.save({
                 'classifier_state_dict': classifier.state_dict(),
                 'epoch': e,
                 'opt': opt.state_dict(),
-                'loss': loss,
+                'test_err': test_err,
             }, workspace_dir + "/" + args.prefix + "_checkpoint.pth")
 
 

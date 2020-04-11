@@ -78,7 +78,7 @@ def evaluate_adversarial(args, model, loader):
           ' Adv Error {adv_errors.avg:.3f}\t'
           .format(clean_error=clean_errors, adv_errors=adv_errors))
 
-    return clean_errors.avg
+    return clean_errors.avg, adv_errors.avg
 
 
 
