@@ -68,6 +68,13 @@ def js_fgan_lower_bound(f):
                    torch.sum(F.softplus(f_diag))) / (n * (n - 1.))
     return first_term - second_term
 
+def my_js_lower_bound(t, device="cuda"):
+    t_pos = t.diag()
+    N = t.shape[-1]
+    mask = (torch.ones((N, N)) - torch.eye(N)).to(device)
+    E_m = (F.softplus(t) * mask).sum() / mask.sum()
+    E_j = torch.mean(F.softplus(-t_pos))
+    return -(np.log(2) - 0.5*(E_m +E_j))
 
 def js_lower_bound(f):
     """Obtain density ratio from JS lower bound then output MI estimate from NWJ bound."""
@@ -152,7 +159,7 @@ def estimate_mutual_information(estimator, scores,
     # elif estimator == 'tuba':
     #     mi = tuba_lower_bound(scores, log_baseline)
     elif estimator == 'js':
-        mi = js_lower_bound(scores)
+        mi = my_js_lower_bound(scores)
     elif estimator == 'smile':
         mi = smile_lower_bound(scores, **kwargs)
     elif estimator == 'dv':

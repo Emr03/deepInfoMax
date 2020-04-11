@@ -37,21 +37,24 @@ if __name__ == "__main__":
     np.random.seed(0)
 
     encoder = GlobalEncoder(stride=args.encoder_stride)
-    # load encoder from checkpoint
-    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
-    # create classifier
-    if args.input_layer == "fc":
-        classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+    if not args.fully_supervised:
+        # load encoder from checkpoint
+        encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
+        # create classifier
+        if args.input_layer == "fc":
+            classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
-    elif args.input_layer == "conv":
-        classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        elif args.input_layer == "conv":
+            classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
-    elif args.input_layer == "y":
-        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        elif args.input_layer == "y":
+            classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
     # if args.cuda_ids and len(args.cuda_ids) > 1:
     #     classifier = nn.DataParallel(classifier)
-
+    else:
+        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10, freeze_encoder=False)
+    
     classifier = classifier.to(args.device)
 
     opt = optim.Adam(classifier.parameters(), lr=args.lr)
