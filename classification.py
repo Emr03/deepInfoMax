@@ -77,7 +77,7 @@ if __name__ == "__main__":
             test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose,
                                                    gpu=args.gpu)
         e += 1
-
+        print(test_err_)
         if test_err > test_err_:
             test_err = test_err_
             torch.save({

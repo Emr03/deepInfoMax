@@ -140,7 +140,7 @@ def eval_classifier(loader, model, epoch, log, verbose, gpu):
 
         log.flush()
 
-    return losses.avg
+    return errors.avg
 
 def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
 
@@ -240,7 +240,7 @@ def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, a
 
     print(' Epoch {epoch}:\t Clean Error {clean_error.avg:.3f}\t'
           ' Adv Error {adv_errors.avg:.3f}\t'
-          .format(clean_error=clean_errors, adv_errors=adv_errors), file=log)
+          .format(epoch=epoch, clean_error=clean_errors, adv_errors=adv_errors), file=log)
     
     log.flush()
     return clean_errors.avg
