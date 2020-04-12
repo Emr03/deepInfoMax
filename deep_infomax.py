@@ -3,6 +3,7 @@ import torch.nn as nn
 from utils.data_loaders import *
 from models.mi_estimation import *
 from models.encoders import *
+from models.prior_matching import *
 from utils.argparser import argparser
 from utils import data_loaders
 from utils import train_eval
@@ -43,11 +44,20 @@ if __name__ == "__main__":
     else:
         DIM = LocalDIM(encoder, type=args.mi_estimator)
 
-    DIM = nn.DataParallel(DIM)
+    if args.prior_matching:
+        prior_matching = PriorMatchingDiscriminator(encoder_dim=64)
+        D_opt = optim.Adam(prior_matching.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
+    else:
+        prior_matching = None
+        D_opt = None
+
+    DIM = nn.DataParallel(DIM)
     DIM = DIM.to(args.device)
-    enc_opt = optim.Adam(DIM.module.global_encoder.parameters(), lr=args.lr)
-    T_opt = optim.Adam(DIM.module.T.parameters(), lr=args.lr)
+
+    enc_opt = optim.Adam(DIM.module.global_encoder.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    T_opt = optim.Adam(DIM.module.T.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
@@ -56,9 +66,11 @@ if __name__ == "__main__":
         torch.save({
             'encoder_state_dict': DIM.module.global_encoder.state_dict(),
             'discriminator_state_dict': DIM.module.T.state_dict(),
+            'prior_matching_state_dict': prior_matching.module.state_dict() if args.prior_matching else None,
             'epoch': e,
             'enc_opt': enc_opt.state_dict(),
             'T_opt': T_opt.state_dict(),
+            'D_opt': D_opt.state_dict() if args.prior_matching else None,
             'loss': loss,
         }, workspace_dir + "/" + args.prefix + "_checkpoint.pth")
 

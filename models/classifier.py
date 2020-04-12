@@ -14,13 +14,14 @@ def unfreeze_weights(model):
 
 class ClassifierConv(nn.Module):
 
-    def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
+    def __init__(self, encoder, num_classes, hidden_units=1024, dropout=0.1, freeze_encoder=True):
         super(ClassifierConv, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.local_encoder.output_size
         self.model = nn.Sequential(nn.Flatten(),
                                    nn.Linear(self.input_size, hidden_units),
+                                   nn.Dropout(p=dropout),
                                    nn.ReLU(),
                                    nn.Linear(hidden_units, num_classes))
 
@@ -41,14 +42,14 @@ class ClassifierConv(nn.Module):
 
 class ClassifierFC(nn.Module):
 
-    def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
+    def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True, dropout=0.1):
         super(ClassifierFC, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.local_encoder.output_size
         self.layer_1 = self.encoder.fc_net._modules['0']
         self.layer_2 = nn.Linear(hidden_units, num_classes)
-        self.model = nn.Sequential(self.layer_1, nn.ReLU(), self.layer_2)
+        self.model = nn.Sequential(self.layer_1, nn.Dropout(p=dropout), nn.ReLU(), self.layer_2)
 
         if freeze_encoder:
             # freeze encoder, but reset layer1 to Trainable
@@ -69,12 +70,13 @@ class ClassifierFC(nn.Module):
 
 class ClassifierY(nn.Module):
 
-    def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True):
+    def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True, dropout=0.1):
         super(ClassifierY, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.output_size
         self.model = nn.Sequential(nn.Linear(self.input_size, hidden_units),
+                                   nn.Dropout(p=dropout),
                                    nn.ReLU(),
                                    nn.Linear(hidden_units, num_classes))
 
