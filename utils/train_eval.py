@@ -20,8 +20,21 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu):
+def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_matching=None, D_opt=None, beta=1, gamma=0.1):
+    """
 
+    :param loader: train data loader
+    :param model: DIM model includes encoder and mi estimator
+    :param enc_opt: optimizer for encoder params
+    :param T_opt: optimizer for mi estimator params
+    :param epoch:
+    :param log: log file
+    :param verbose:
+    :param gpu:
+    :param prior_matching: module for prior matching discriminator, default None
+    :param D_opt: optimizer for prior matching discriminator, default None
+    :return:
+    """
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -36,17 +49,34 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu):
             X, y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)
 
-        loss = model(X).mean()
+        dim_loss, E = model(X).mean()
 
-        enc_opt.zero_grad()
         T_opt.zero_grad()
-        loss.backward()
-        enc_opt.step()
-        T_opt.step()
+        D_opt.zero_grad()
+        enc_opt.zero_grad()
+
+        if prior_matching:
+            prior_matching_loss = prior_matching(E)
+            # prior matching disc should maximize prior matching loss (JSD)
+            d_loss = dim_loss * beta - prior_matching_loss * gamma
+
+            d_loss.backward(retain_graph=True)
+            D_opt.step()
+
+            enc_opt.zero_grad()
+            e_loss = dim_loss * beta + prior_matching_loss * gamma
+            e_loss.backward()
+            enc_opt.step()
+            T_opt.step()
+
+        else:
+            dim_loss.backward()
+            enc_opt.step()
+            T_opt.step()
 
         batch_time.update(time.time()-end)
         end = time.time()
-        losses.update(loss.item(), X.size(0))
+        losses.update(dim_loss.item(), X.size(0))
 
         batch.set_description("Epoch {} Loss {} ".format(epoch, losses.avg))
         if verbose and i % verbose == 0:

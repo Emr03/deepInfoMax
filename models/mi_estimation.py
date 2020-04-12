@@ -67,7 +67,7 @@ class LocalDIM(nn.Module):
         print(T.shape)
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
         mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
-        return mi
+        return mi, E
 
 class GlobalDIM(nn.Module):
 
