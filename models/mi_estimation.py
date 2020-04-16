@@ -3,43 +3,65 @@ import torch.nn as nn
 import torch.nn.functional as F
 from models.encoders import *
 from utils.mi_estimators import *
+from utils.mi_utils import Permute
 import math
 
 class LocalDIM(nn.Module):
 
-    def __init__(self, global_encoder, type="js"):
+    def __init__(self, global_encoder, type="js", concat=False):
 
         super(LocalDIM, self).__init__()
         self.global_encoder = global_encoder
         self.estimator = type
 
         # input_shape = num_channels of local encoder output
-        input_shape = self.global_encoder.local_encoder.output_shape
+        self.input_shape = self.global_encoder.local_encoder.output_shape
+        self.loc_input_shape = self.global_encoder.local_encoder.output_shape
 
-        # since we are concatenating the global encoder representation along the channel dimension
-        input_shape[0] = input_shape[0] + global_encoder.output_size
+        if concat:
+            # since we are concatenating the global encoder representation along the channel dimension
+            input_dim = self.input_shape[0] + global_encoder.output_size
 
-        # first layer is a 1x1 conv, acts as FC layer over channel dim
-        # maintain kernel size = 1 since local encoder representations are paired with global rep separately
-        self.T = nn.Sequential(nn.Conv2d(in_channels=input_shape[0], out_channels=512,
-                                         kernel_size=1, stride=1),
-                               nn.ReLU(),
-                               nn.Conv2d(in_channels=512, out_channels=512,
-                                         kernel_size=1, stride=1),
-                               nn.ReLU(),
-                               nn.Conv2d(in_channels=512, out_channels=1,
-                                         kernel_size=1, stride=1))
+            # first layer is a 1x1 conv, acts as FC layer over channel dim
+            # maintain kernel size = 1 since local encoder representations are paired with global rep separately
+            self.T = nn.Sequential(nn.Conv2d(in_channels=input_dim, out_channels=512,
+                                             kernel_size=1, stride=1),
+                                   nn.ReLU(),
+                                   nn.Conv2d(in_channels=512, out_channels=512,
+                                             kernel_size=1, stride=1),
+                                   nn.ReLU(),
+                                   nn.Conv2d(in_channels=512, out_channels=1,
+                                             kernel_size=1, stride=1))
 
-    def forward(self, X):
-        """
-        :param X:
-        :return:
-        """
-        # pass X through global encoder and obtain feature map C and global representation E
-        C, Enc = self.global_encoder(X)
+        else:
+            # two separate encoders for local feature map and global feature vector
+            self.T_glob_1 = nn.Sequential(nn.Linear(self.global_encoder.output_size, 2048),
+                                          nn.ReLU(),
+                                          nn.Linear(2048, 2048))
 
+            self.T_glob_2 = nn.Sequential(nn.Linear(self.global_encoder.output_size, 2048),
+                                          nn.ReLU())
+
+            self.T_loc_1 = nn.Sequential(nn.Conv2d(in_channels=self.loc_input_shape[0], out_channels=2048,
+                                                   kernel_size=1, stride=1),
+                                         nn.BatchNorm2d(2048),
+                                         nn.ReLU(),
+                                         nn.Conv2d(in_channels=self.loc_input_shape[0], out_channels=2048,
+                                                   kernel_size=1, stride=1))
+
+            self.T_loc_2 = nn.Sequential(nn.Conv2d(in_channels=self.loc_input_shape[0], out_channels=2048,
+                                                   kernel_size=1, stride=1),
+                                         nn.ReLU())
+
+            # for layer norm bring channel dim to last, then bring back
+            self.block_ln = nn.Sequential(Permute(0, 2, 3, 1),
+                                          nn.LayerNorm(2048),
+                                          Permute(0, 3, 1, 2))
+
+    def forward_concat(self, E, C):
+        # TODO: fix or discard
         # replicate and concatenate E to C
-        E = Enc.unsqueeze(2).unsqueeze(3)
+        E = E.unsqueeze(2).unsqueeze(3)
         E = E.repeat(1, 1, C.shape[2], C.shape[3])
 
         # Each element along the batch dimension in C should be mapped with every negative element in E
@@ -64,12 +86,46 @@ class LocalDIM(nn.Module):
         T = self.T(EC).squeeze()
         del EC
         torch.cuda.empty_cache()
+        return T
+
+    def forward_dot(self, E, C):
+
+        # has shape batch_size, 2048, 8, 8 -> 64, batch_size, 2048
+        embedded_local = self.block_ln(self.T_loc_1(C) + self.T_loc_2(C)).contiguous()\
+            .reshape(-1, 2048, C.shape[2] * C.shape[3]).permute(2, 0, 1).contiguous()
+
+        # has shape batch_size, 2048
+        embedded_global = nn.LayerNorm(normalized_shape=2048)(self.T_glob_1(E) + self.T_glob_2(E))
+
+        # replicate embedded_global along first dimension of embedded_local -> 64, batch_size, 2048
+        embedded_local = embedded_global.unsqueeze(0).repeat(embedded_local.shape[0], 1, 1)
+
+        scores = torch.bmm(embedded_local, embedded_global.transpose(2, 1))
+        return scores
+
+    def forward(self, X):
+        """
+        :param X:
+        :return:
+        """
+        # pass X through global encoder and obtain feature map C and global representation E
+        C, Enc = self.global_encoder(X)
+
+        if self.concat:
+            T = self.forward_concat(E=Enc, C=C)
+
+        else:
+            # k x k, batch_size, batch_size
+            T = self.forward_dot(E=Enc, C=C)
+
         #print(T.shape)
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
         mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
         return mi, Enc
 
 class GlobalDIM(nn.Module):
+
+    # TODO: fix or discard
 
     def __init__(self, global_encoder, type="jsd"):
         super(GlobalDIM, self).__init__()

@@ -68,13 +68,22 @@ def js_fgan_lower_bound(f):
                    torch.sum(F.softplus(f_diag))) / (n * (n - 1.))
     return first_term - second_term
 
+
 def my_js_lower_bound(t, device="cuda"):
+    """
+
+    :param t: D, batch_size, batch_size
+    :param device:
+    :return:
+    """
     t_pos = t.diag()
     N = t.shape[-1]
-    mask = (torch.ones((N, N)) - torch.eye(N)).to(device)
+    D = t.shape[0]
+    mask = (torch.ones_like(t) - torch.eye(N).unsqueeze(0).repeat(D)).to(device)
     E_m = (F.softplus(t) * mask).sum() / mask.sum()
     E_j = torch.mean(F.softplus(-t_pos))
     return -2*(np.log(2) - 0.5*(E_m + E_j))
+
 
 def js_lower_bound(f):
     """Obtain density ratio from JS lower bound then output MI estimate from NWJ bound."""

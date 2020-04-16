@@ -60,19 +60,27 @@ class LocalEncoder(nn.Module):
                 #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size (256) x 23 x 23
+                )
 
+            self.output_layer = nn.Sequential(
                 nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, padding=padding, bias=False),
                 nn.BatchNorm2d(ndf * 4),
                 #nn.Dropout2d(p=dropout),
-                nn.ReLU(inplace=True)
-                )
+                nn.ReLU(inplace=True))
+
             self.output_shape = [ndf * 4, 20, 20]
 
         self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
 
     def forward(self, input):
-        output = self.main(input)
-        return output
+        """
+        in the paper local representations are the output of the penultimate convolution layer
+        :param input:
+        :return:
+        """
+        C = self.main(input)
+        output = self.output_layer(C)
+        return C, output
 
 class GlobalEncoder(nn.Module):
 
@@ -85,9 +93,9 @@ class GlobalEncoder(nn.Module):
                                     nn.Linear(1024, self.output_size))
 
     def forward(self, input, intermediate=False):
-        C = self.local_encoder(input)
+        C, output = self.local_encoder(input)
         # print("C shape" , C.shape)
-        enc_input = torch.nn.Flatten()(C)
+        enc_input = torch.nn.Flatten()(output)
         if intermediate:
             return self.fc_net._modules["0"](enc_input)
 
