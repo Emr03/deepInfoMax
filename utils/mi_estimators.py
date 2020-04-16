@@ -76,12 +76,14 @@ def my_js_lower_bound(t, device="cuda"):
     :param device:
     :return:
     """
-    t_pos = t.diag()
     N = t.shape[-1]
     D = t.shape[0]
-    mask = (torch.ones_like(t) - torch.eye(N).unsqueeze(0).repeat(D)).to(device)
-    E_m = (F.softplus(t) * mask).sum() / mask.sum()
-    E_j = torch.mean(F.softplus(-t_pos))
+    pos_mask = torch.eye(N).unsqueeze(0).repeat(D).to(device)
+    t_pos = t * pos_mask
+
+    neg_mask = (torch.ones_like(t) - torch.eye(N).unsqueeze(0).repeat(D)).to(device)
+    E_m = (F.softplus(t) * neg_mask).sum() / neg_mask.sum()
+    E_j = F.softplus(-t_pos).sum() / pos_mask.sum()
     return -2*(np.log(2) - 0.5*(E_m + E_j))
 
 

@@ -1,5 +1,6 @@
 import torch
 
+
 class Permute(torch.nn.Module):
     """Module for permuting axes.
     """
