@@ -74,7 +74,7 @@ def my_js_lower_bound(t, device="cuda"):
     mask = (torch.ones((N, N)) - torch.eye(N)).to(device)
     E_m = (F.softplus(t) * mask).sum() / mask.sum()
     E_j = torch.mean(F.softplus(-t_pos))
-    return -(np.log(2) - 0.5*(E_m +E_j))
+    return -2*(np.log(2) - 0.5*(E_m + E_j))
 
 def js_lower_bound(f):
     """Obtain density ratio from JS lower bound then output MI estimate from NWJ bound."""

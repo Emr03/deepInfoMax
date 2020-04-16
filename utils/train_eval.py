@@ -37,8 +37,8 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
     """
     batch_time = AverageMeter()
     data_time = AverageMeter()
-    losses = AverageMeter()
-
+    dim_losses = AverageMeter()
+    prior_losses = AverageMeter()
     model.train()
 
     end = time.time()
@@ -49,25 +49,27 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
             X, y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)
 
-        dim_loss, E = model(X).mean()
+        dim_loss, E = model(X)
+        dim_loss = dim_loss.mean()
 
         T_opt.zero_grad()
-        D_opt.zero_grad()
         enc_opt.zero_grad()
 
         if prior_matching:
-            prior_matching_loss = prior_matching(E)
-            # prior matching disc should maximize prior matching loss (JSD)
-            d_loss = dim_loss * beta - prior_matching_loss * gamma
+            D_opt.zero_grad()
+            prior_matching_loss = prior_matching(E).mean()
+            
+            d_loss = dim_loss.mean() * beta + prior_matching_loss * gamma
 
             d_loss.backward(retain_graph=True)
             D_opt.step()
 
             enc_opt.zero_grad()
-            e_loss = dim_loss * beta + prior_matching_loss * gamma
+            e_loss = dim_loss * beta - prior_matching_loss * gamma
             e_loss.backward()
             enc_opt.step()
             T_opt.step()
+            prior_losses.update(prior_matching_loss.item(), X.size(0))
 
         else:
             dim_loss.backward()
@@ -76,19 +78,20 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
 
         batch_time.update(time.time()-end)
         end = time.time()
-        losses.update(dim_loss.item(), X.size(0))
-
-        batch.set_description("Epoch {} Loss {} ".format(epoch, losses.avg))
+        dim_losses.update(dim_loss.item(), X.size(0))
+        
+        batch.set_description("Epoch {} DIM Loss {} Prior Loss {}".format(epoch, dim_losses.avg, prior_losses.avg))
         if verbose and i % verbose == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                  'DIM Loss {dim_loss.val:.4f} ({dim_loss.avg:.4f})\t'
+                  'Prior Loss {prior_loss.val:.4f} ({prior_loss.avg:.4f})'.format(
                    epoch, i, len(loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses), file=log)
+                   data_time=data_time, dim_loss=dim_losses, prior_loss=prior_losses), file=log)
         log.flush()
 
-    return losses.avg
+    return dim_losses.avg
 
 def train_classifier(loader, model, opt, epoch, log, verbose, gpu):
 

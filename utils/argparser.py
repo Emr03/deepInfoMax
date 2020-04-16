@@ -3,7 +3,7 @@ import os
 import torch
 
 def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
-              opt='adam', momentum=0.9, weight_decay=5e-4):
+              opt='adam', momentum=0.9, weight_decay=1e-5):
 
     parser = argparse.ArgumentParser()
 
@@ -31,7 +31,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument('--encoder_ckpt', type=str, default=None)
     parser.add_argument('--fully_supervised', action="store_true")
     parser.add_argument('--classifier_adversarial', action="store_true")
-
+    
     # attack arguments
     parser.add_argument('--classifier_ckpt', type=str, default=None)
     parser.add_argument('--attack', type=str, default="pgd")

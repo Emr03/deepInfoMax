@@ -36,10 +36,10 @@ class LocalDIM(nn.Module):
         :return:
         """
         # pass X through global encoder and obtain feature map C and global representation E
-        C, E = self.global_encoder(X)
+        C, Enc = self.global_encoder(X)
 
         # replicate and concatenate E to C
-        E = E.unsqueeze(2).unsqueeze(3)
+        E = Enc.unsqueeze(2).unsqueeze(3)
         E = E.repeat(1, 1, C.shape[2], C.shape[3])
 
         # Each element along the batch dimension in C should be mapped with every negative element in E
@@ -64,10 +64,10 @@ class LocalDIM(nn.Module):
         T = self.T(EC).squeeze()
         del EC
         torch.cuda.empty_cache()
-        print(T.shape)
+        #print(T.shape)
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
         mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
-        return mi, E
+        return mi, Enc
 
 class GlobalDIM(nn.Module):
 

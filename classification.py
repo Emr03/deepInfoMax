@@ -42,13 +42,13 @@ if __name__ == "__main__":
         encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
         # create classifier
         if args.input_layer == "fc":
-            classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+            classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10)
 
         elif args.input_layer == "conv":
-            classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+            classifier = ClassifierConv(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10)
 
         elif args.input_layer == "y":
-            classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+            classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10)
 
     # if args.cuda_ids and len(args.cuda_ids) > 1:
     #     classifier = nn.DataParallel(classifier)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     
     classifier = classifier.to(args.device)
 
-    opt = optim.Adam(classifier.parameters(), lr=args.lr)
+    opt = optim.Adam(classifier.model.parameters(), lr=args.lr)
 
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0

@@ -21,23 +21,23 @@ class LocalEncoder(nn.Module):
                 # input is (nc) x 32 x 32
                 nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
                 nn.BatchNorm2d(ndf),
-                nn.Dropout2d(p=dropout),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size. 64 x 29 x 29, or 16 x 16
 
                 nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
                 nn.BatchNorm2d(ndf * 2),
-                nn.Dropout2d(p=dropout),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size. 128 x 26 x 26 or 8 x 8
 
-                nn.Conv2d(ndf * 2, ndf * 4 * stride, kernel_size=4, stride=stride, padding=padding, bias=False),
-                nn.BatchNorm2d(ndf * 4 * stride),
-                nn.Dropout2d(p=dropout),
+                nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 4),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size (256) x 23 x 23 or 512 x 4 x 4
             )
-            self.output_shape = [ndf * 8, 4, 4]
+            self.output_shape = [ndf * 4, 4, 4]
 
         else:
             padding = 0
@@ -45,28 +45,28 @@ class LocalEncoder(nn.Module):
                 # input is (nc) x 32 x 32
                 nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
                 nn.BatchNorm2d(ndf),
-                nn.Dropout2d(p=dropout),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size. 64 x 29 x 29,
 
-                nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
-                nn.BatchNorm2d(ndf * 2),
-                nn.Dropout2d(p=dropout),
+                nn.Conv2d(ndf, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size. 128 x 26 x 26
 
-                nn.Conv2d(ndf * 2, ndf * 4 * stride, kernel_size=4, stride=stride, padding=padding, bias=False),
-                nn.BatchNorm2d(ndf * 4 * stride),
-                nn.Dropout2d(p=dropout),
+                nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 2),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size (256) x 23 x 23
 
-                nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=stride, padding=padding, bias=False),
-                nn.BatchNorm2d(ndf * 8),
-                nn.Dropout2d(p=dropout),
+                nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 4),
+                #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True)
                 )
-            self.output_shape = [ndf * 8, 20, 20]
+            self.output_shape = [ndf * 4, 20, 20]
 
         self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
 
@@ -84,10 +84,13 @@ class GlobalEncoder(nn.Module):
                                     nn.ReLU(),
                                     nn.Linear(1024, self.output_size))
 
-    def forward(self, input):
+    def forward(self, input, intermediate=False):
         C = self.local_encoder(input)
         # print("C shape" , C.shape)
         enc_input = torch.nn.Flatten()(C)
+        if intermediate:
+            return self.fc_net._modules["0"](enc_input)
+
         E = self.fc_net(enc_input)
         return C, E.squeeze()
 
