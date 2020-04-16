@@ -58,6 +58,9 @@ class LocalDIM(nn.Module):
                                           nn.LayerNorm(2048),
                                           Permute(0, 3, 1, 2))
 
+            # bundle up critic parts in moduleList for easy access to trainable params
+            self.T = nn.ModuleList([self.T_glob_1, self.T_glob_2, self.T_loc_1, self.T_loc_2])
+
     def forward_concat(self, E, C):
         # TODO: fix or discard
         # replicate and concatenate E to C
