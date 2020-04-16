@@ -16,7 +16,8 @@ class LocalDIM(nn.Module):
 
         # input_shape = num_channels of local encoder output
         self.input_shape = self.global_encoder.local_encoder.output_shape
-        self.loc_input_shape = self.global_encoder.local_encoder.output_shape
+        self.loc_input_shape = self.global_encoder.local_encoder.features_shape
+        self.concat = concat
 
         if concat:
             # since we are concatenating the global encoder representation along the channel dimension
@@ -46,7 +47,7 @@ class LocalDIM(nn.Module):
                                                    kernel_size=1, stride=1),
                                          nn.BatchNorm2d(2048),
                                          nn.ReLU(),
-                                         nn.Conv2d(in_channels=self.loc_input_shape[0], out_channels=2048,
+                                         nn.Conv2d(in_channels=2048, out_channels=2048,
                                                    kernel_size=1, stride=1))
 
             self.T_loc_2 = nn.Sequential(nn.Conv2d(in_channels=self.loc_input_shape[0], out_channels=2048,
@@ -100,8 +101,8 @@ class LocalDIM(nn.Module):
         # has shape batch_size, 2048
         embedded_global = nn.LayerNorm(normalized_shape=2048)(self.T_glob_1(E) + self.T_glob_2(E))
 
-        # replicate embedded_global along first dimension of embedded_local -> 64, batch_size, 2048
-        embedded_local = embedded_global.unsqueeze(0).repeat(embedded_local.shape[0], 1, 1)
+        # replicate embedded_global along first dimension  -> 64, batch_size, 2048
+        embedded_global = embedded_global.unsqueeze(0).repeat(embedded_local.shape[0], 1, 1)
 
         scores = torch.bmm(embedded_local, embedded_global.transpose(2, 1))
         return scores

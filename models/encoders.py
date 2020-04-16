@@ -30,7 +30,8 @@ class LocalEncoder(nn.Module):
                 #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True))
                 # state size. 128 x 26 x 26 or 8 x 8)
-
+            
+            self.features_shape = [ndf * 2, 8, 8]
             self.output_shape = [ndf * 4, 4, 4]
             
             self.output_layer = nn.Sequential(
@@ -68,7 +69,8 @@ class LocalEncoder(nn.Module):
                 nn.BatchNorm2d(ndf * 4),
                 #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True))
-
+            
+            self.features_shape = [ndf * 2, 23, 23]
             self.output_shape = [ndf * 4, 20, 20]
 
         self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
