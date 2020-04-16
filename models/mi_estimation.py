@@ -58,6 +58,8 @@ class LocalDIM(nn.Module):
             self.block_ln = nn.Sequential(Permute(0, 2, 3, 1),
                                           nn.LayerNorm(2048),
                                           Permute(0, 3, 1, 2))
+            
+            self.glob_ln = nn.LayerNorm(2048)
 
             # bundle up critic parts in moduleList for easy access to trainable params
             self.T = nn.ModuleList([self.T_glob_1, self.T_glob_2, self.T_loc_1, self.T_loc_2])
@@ -99,7 +101,7 @@ class LocalDIM(nn.Module):
             .reshape(-1, 2048, C.shape[2] * C.shape[3]).permute(2, 0, 1).contiguous()
 
         # has shape batch_size, 2048
-        embedded_global = nn.LayerNorm(normalized_shape=2048)(self.T_glob_1(E) + self.T_glob_2(E))
+        embedded_global = self.glob_ln(self.T_glob_1(E) + self.T_glob_2(E))
 
         # replicate embedded_global along first dimension  -> 64, batch_size, 2048
         embedded_global = embedded_global.unsqueeze(0).repeat(embedded_local.shape[0], 1, 1)
