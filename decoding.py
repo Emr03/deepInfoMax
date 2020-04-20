@@ -44,7 +44,7 @@ if __name__ == "__main__":
     decoder = decoder.to(args.device)
     opt = optim.Adam(decoder.parameters(), lr=args.lr)
     
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[50, 100], gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[50, 100, 200, 300, 400, 500], gamma=0.5)
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:

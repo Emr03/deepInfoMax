@@ -82,8 +82,9 @@ def my_js_lower_bound(t, device="cuda"):
     neg_mask = (torch.ones_like(t) - pos_mask)
     E_m = (F.softplus(t) * neg_mask).sum() / neg_mask.sum()
     E_j = (F.softplus(-t) * pos_mask).sum() / pos_mask.sum()
+    #print("Em", E_m, "E_j", E_j)
     js = -2*(np.log(2) - 0.5*(E_m + E_j))
-    print("js", js)
+    #print("js", js)
     return js
 
 def js_lower_bound(f):
