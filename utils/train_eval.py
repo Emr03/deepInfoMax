@@ -1,6 +1,7 @@
 import time
 import torch.nn as nn
 from tqdm import tqdm
+from utils.ms_ssim import ms_ssim
 from attacks.gradient_untargeted import *
 
 class AverageMeter(object):
@@ -214,6 +215,39 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
         log.flush()
 
     return losses.avg
+
+def eval_decoder(loader, encoder, decoder, log, verbose, gpu):
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    ms_ssim_val = AverageMeter()
+    decoder.train()
+    encoder.eval()
+
+    end = time.time()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+        if gpu:
+            X, y = X.cuda(), y.cuda()
+        data_time.update(time.time() - end)
+
+        C, E = encoder(X)
+        R = decoder(E)
+        sim = ms_ssim(X, R)
+
+        batch_time.update(time.time() - end)
+        end = time.time()
+        ms_ssim_val.update(sim.item(), X.size(0))
+
+        if verbose and i % verbose == 0:
+            print('Batch: [{0}]\t'
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                i, batch_time=batch_time,
+                data_time=data_time, loss=ms_ssim_val), file=log)
+
+    return ms_ssim_val.avg
 
 
 def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, args, gamma=0.9):
