@@ -53,12 +53,12 @@ if __name__ == "__main__":
     # if args.cuda_ids and len(args.cuda_ids) > 1:
     #     classifier = nn.DataParallel(classifier)
     else:
-        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10, freeze_encoder=False)
+        classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10, freeze_encoder=False)
     
     classifier = classifier.to(args.device)
 
-    opt = optim.Adam(classifier.model.parameters(), lr=args.lr)
-
+    opt = optim.Adam(classifier.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[15, 50, 100, 200, 300], gamma=0.5)
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     test_err = 1.0
@@ -69,13 +69,15 @@ if __name__ == "__main__":
 
             clean_errors, adv_errors = evaluate_adversarial(args, classifier, test_loader)
             test_err_ = adv_errors
+            
 
         else:
             loss = train_eval.train_classifier(train_loader, classifier, opt, e,
                                                train_log, verbose=args.verbose, gpu=args.gpu)
 
-            test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose,
-                                                   gpu=args.gpu)
+            test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose, gpu=args.gpu)
+
+        #scheduler.step()
         e += 1
         print(test_err_)
         if test_err > test_err_:

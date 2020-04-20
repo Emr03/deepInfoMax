@@ -3,7 +3,7 @@ import os
 import torch
 
 def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
-              opt='adam', momentum=0.9, weight_decay=1e-5):
+              opt='adam', momentum=0.9, weight_decay=1e-6):
 
     parser = argparse.ArgumentParser()
 

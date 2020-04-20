@@ -51,7 +51,7 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
 
         dim_loss, E = model(X)
         dim_loss = dim_loss.mean()
-
+        
         T_opt.zero_grad()
         enc_opt.zero_grad()
 
@@ -93,7 +93,7 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
 
     return dim_losses.avg
 
-def train_classifier(loader, model, opt, epoch, log, verbose, gpu):
+def train_classifier(loader, model, opt,  epoch, log, verbose, gpu):
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
