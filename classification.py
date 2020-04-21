@@ -58,7 +58,7 @@ if __name__ == "__main__":
     classifier = classifier.to(args.device)
 
     opt = optim.Adam(classifier.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[15, 50, 100, 200, 300], gamma=0.5)
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[15, 50, 100, 200, 300], gamma=0.5)
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     test_err = 1.0

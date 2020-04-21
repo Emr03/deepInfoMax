@@ -73,8 +73,9 @@ def my_nwj_lower_bound(t, device="cuda"):
     pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
     neg_mask = (torch.ones_like(t) - pos_mask)
 
+    print(torch.logsumexp((t-1), dim=(0, 1, 2)))
     nwj = - (t * pos_mask).sum() / pos_mask.sum() \
-          + torch.exp(torch.tensor(-1)) * (torch.exp(t) * neg_mask).sum() // neg_mask.sum()
+          + (torch.logsumexp((t-1), dim=(0, 1, 2)) - torch.log(torch.tensor(N * N * D * 1.0))).exp()
 
     return nwj
 
@@ -175,7 +176,7 @@ def estimate_mutual_information(estimator, scores,
     if estimator == 'infonce':
         mi = infonce_lower_bound(scores)
     elif estimator == 'nwj':
-        mi = nwj_lower_bound(scores)
+        mi = my_nwj_lower_bound(scores)
     # elif estimator == 'tuba':
     #     mi = tuba_lower_bound(scores, log_baseline)
     elif estimator == 'js':
