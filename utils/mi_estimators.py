@@ -45,7 +45,6 @@ def tuba_lower_bound(scores, log_baseline=None):
     marg_term = logmeanexp_nodiag(scores).exp()
     return 1. + joint_term - marg_term
 
-
 def nwj_lower_bound(scores):
     return tuba_lower_bound(scores - 1.)
 
@@ -68,6 +67,16 @@ def js_fgan_lower_bound(f):
                    torch.sum(F.softplus(f_diag))) / (n * (n - 1.))
     return first_term - second_term
 
+def my_nwj_lower_bound(t, device="cuda"):
+    N = t.shape[-1]
+    D = t.shape[0]
+    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
+    neg_mask = (torch.ones_like(t) - pos_mask)
+
+    nwj = - (t * pos_mask).sum() / pos_mask.sum() \
+          + torch.exp(torch.tensor(-1)) * (torch.exp(t) * neg_mask).sum() // neg_mask.sum()
+
+    return nwj
 
 def my_js_lower_bound(t, device="cuda"):
     """
