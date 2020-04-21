@@ -221,7 +221,7 @@ def eval_decoder(loader, encoder, decoder, log, verbose, gpu):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     ms_ssim_val = AverageMeter()
-    decoder.train()
+    decoder.eval()
     encoder.eval()
 
     end = time.time()
@@ -232,8 +232,10 @@ def eval_decoder(loader, encoder, decoder, log, verbose, gpu):
         data_time.update(time.time() - end)
 
         C, E = encoder(X)
+        if len(E.shape) == 1:
+            E = E.unsqueeze(0)
         R = decoder(E)
-        sim = ms_ssim(X, R)
+        sim = ms_ssim(X, R, size_average=False)
 
         batch_time.update(time.time() - end)
         end = time.time()
