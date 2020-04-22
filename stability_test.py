@@ -7,6 +7,7 @@ from utils import data_loaders
 from models.classifier import *
 from models.decoder import *
 import random
+import tqdm
 import numpy as np
 import time
 from utils.train_eval import AverageMeter
@@ -21,7 +22,8 @@ def get_attack_stats(args, model, loader, log):
 
     model.eval()
     end = time.time()
-    for i, (X, y) in enumerate(loader):
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
 
         if args.gpu:
             X, y = X.cuda(), y.cuda()
@@ -51,11 +53,14 @@ def get_attack_stats(args, model, loader, log):
         # compute fraction of l2_norm
         change_fraction.update((Z_clean - Z_adv) / Z_clean)
 
+        batch.set_description("Clean Err {} Adv Err {} L2 {} Frac {}".format(clean_errors.avg, adv_errors.avg,
+                                                                             l2_norms.avg, change_fraction.avg))
+
         # print to logfile
-        print("attack: ", args.attack,
-              " adv_err: ", err_adv,
+        print("clean_err: ", clean_errors.avg,
+              " adv_err: ", adv_errors.avg,
               "l2 norm: ", l2_norms.avg,
-              "l2 frac: ", change_fraction.avg,
+              "l1 frac: ", change_fraction.avg,
               file=log)
 
     print(' * Clean Error {clean_error.avg:.3f}\t'
