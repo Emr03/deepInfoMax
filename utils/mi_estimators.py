@@ -16,6 +16,7 @@ def logmeanexp_diag(t, device='cuda'):
     num_elem = D * N * 1.
     return logsumexp - torch.log(torch.tensor(num_elem).float()).to(device)
 
+
 def logmeanexp_nodiag(t, device="cuda"):
     N = t.shape[-1]
     D = t.shape[0]
@@ -49,12 +50,15 @@ def nwj_lower_bound(scores):
     return tuba_lower_bound(scores - 1.)
 
 
-def infonce_lower_bound(scores):
-    nll = scores.diag().mean() - scores.logsumexp(dim=1)
+def infonce_lower_bound(scores, device="cuda"):
+    N = scores.shape[-1]
+    D = scores.shape[0]
+    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
+    pos_term = (scores * pos_mask).sum() / pos_mask.mask()
+    neg_term = (scores.logsumexp(dim=2)).mean() - torch.log(torch.tensor(N * 1.0))
     # Alternative implementation:
     # nll = -tf.nn.sparse_softmax_cross_entropy_with_logits(logits=scores, labels=tf.range(batch_size))
-    mi = torch.tensor(scores.size(0)).float().log() + nll
-    mi = mi.mean()
+    mi = -pos_term + neg_term
     return mi
 
 
