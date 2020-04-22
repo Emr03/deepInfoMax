@@ -4,31 +4,24 @@ import torch
 import torch.nn.functional as F
 
 
-def logmeanexp_diag(x, device='cuda'):
+def logmeanexp_diag(t, device='cuda'):
     """Compute logmeanexp over the diagonal elements of x."""
-    batch_size = x.size(0)
+    N = t.shape[-1]
+    D = t.shape[0]
 
-    logsumexp = torch.logsumexp(x.diag(), dim=(0,))
-    num_elem = batch_size
-
+    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
+    i = torch.nonzero(t * pos_mask)
+    t = t[i[:, 0], i[:, 1], i[:, 2]]
+    logsumexp = torch.logsumexp(t, dim=(0,))
+    num_elem = D * N
     return logsumexp - torch.log(torch.tensor(num_elem).float()).to(device)
 
-
-def logmeanexp_nodiag(x, dim=None, device='cuda'):
-    batch_size = x.size(0)
-    if dim is None:
-        dim = (0, 1)
-
-    logsumexp = torch.logsumexp(
-        x - torch.diag(np.inf * torch.ones(batch_size).to(device)), dim=dim)
-
-    try:
-        if len(dim) == 1:
-            num_elem = batch_size - 1.
-        else:
-            num_elem = batch_size * (batch_size - 1.)
-    except ValueError:
-        num_elem = batch_size - 1
+def logmeanexp_nodiag(t, device="cuda"):
+    N = t.shape[-1]
+    D = t.shape[0]
+    inf_mask = torch.diag(np.inf * torch.ones(N)).to(device).unsqueeze(0).repeat(D, 1, 1)
+    logsumexp = torch.logsumexp(t - inf_mask, dim=(0, 1, 2))
+    num_elem = D * N * N - D * N
     return logsumexp - torch.log(torch.tensor(num_elem)).to(device)
 
 
