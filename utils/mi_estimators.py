@@ -54,7 +54,7 @@ def infonce_lower_bound(scores, device="cuda"):
     N = scores.shape[-1]
     D = scores.shape[0]
     pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
-    pos_term = (scores * pos_mask).sum() / pos_mask.mask()
+    pos_term = (scores * pos_mask).sum() / pos_mask.sum()
     neg_term = (scores.logsumexp(dim=2)).mean() - torch.log(torch.tensor(N * 1.0))
     # Alternative implementation:
     # nll = -tf.nn.sparse_softmax_cross_entropy_with_logits(logits=scores, labels=tf.range(batch_size))
@@ -169,7 +169,7 @@ def estimate_mutual_information(estimator, scores,
     if baseline_fn is not None:
         # Some baselines' output is (batch_size, 1) which we remove here.
         log_baseline = torch.squeeze(baseline_fn(y))
-    if estimator == 'infonce':
+    if estimator == 'nce':
         mi = infonce_lower_bound(scores)
     elif estimator == 'nwj':
         mi = nwj_lower_bound(scores)
