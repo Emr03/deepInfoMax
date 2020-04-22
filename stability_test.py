@@ -35,9 +35,9 @@ def get_attack_stats(args, model, loader, log):
 
         elif args.attack == "fgsm":
             X_adv, delta, out, out_adv = fgsm(model=model, X=X, y=y, epsilon=args.epsilon)
-
-        err_clean = (out.data.max(1)[1] != y).float().sum() / X.size(0)
-        err_adv = (out_adv.data.max(1)[1] != y).float().sum() / X.size(0)
+        
+        err_clean = (out.data != y).float().sum() / X.size(0)
+        err_adv = (out_adv.data != y).float().sum() / X.size(0)
 
         clean_errors.update(err_clean)
         adv_errors.update(err_adv)
