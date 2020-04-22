@@ -7,7 +7,7 @@ from utils import data_loaders
 from models.classifier import *
 from models.decoder import *
 import random
-import tqdm
+from tqdm import tqdm
 import numpy as np
 import time
 from utils.train_eval import AverageMeter
@@ -47,11 +47,12 @@ def get_attack_stats(args, model, loader, log):
         # pass perturbed input through classifier's encoder, get perturbed representations
         Z_adv = classifier.encoder(X_adv, intermediate=True)
 
-        Z_l2 = torch.norm(Z_clean - Z_adv, p=2, dim=-1, keepdim=True)
+        Z_l2 = torch.norm(Z_clean - Z_adv, p=2, dim=-1, keepdim=True).mean()
         l2_norms.update(Z_l2)
 
-        # compute fraction of l2_norm
-        change_fraction.update((Z_clean - Z_adv) / Z_clean)
+        # compute fraction of l1_norm
+        change_fraction = (torch.abs(Z_clean - Z_adv) / Z_clean).max()
+        change_fraction.update()
 
         batch.set_description("Clean Err {} Adv Err {} L2 {} Frac {}".format(clean_errors.avg, adv_errors.avg,
                                                                              l2_norms.avg, change_fraction.avg))
