@@ -13,7 +13,7 @@ def logmeanexp_diag(t, device='cuda'):
     i = torch.nonzero(t * pos_mask)
     t = t[i[:, 0], i[:, 1], i[:, 2]]
     logsumexp = torch.logsumexp(t, dim=(0,))
-    num_elem = D * N
+    num_elem = D * N * 1.
     return logsumexp - torch.log(torch.tensor(num_elem).float()).to(device)
 
 def logmeanexp_nodiag(t, device="cuda"):
@@ -21,7 +21,8 @@ def logmeanexp_nodiag(t, device="cuda"):
     D = t.shape[0]
     inf_mask = torch.diag(np.inf * torch.ones(N)).to(device).unsqueeze(0).repeat(D, 1, 1)
     logsumexp = torch.logsumexp(t - inf_mask, dim=(0, 1, 2))
-    num_elem = D * N * N - D * N
+    print(logsumexp)
+    num_elem = D * N * N - D * N * 1.
     return logsumexp - torch.log(torch.tensor(num_elem)).to(device)
 
 
@@ -37,11 +38,11 @@ def tuba_lower_bound(scores, log_baseline=None, device="cuda"):
     # which are the diagonal elmements of the scores matrix.
     pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
     joint_term = (scores * pos_mask).sum() / pos_mask.sum()
-
+    print("joint term", joint_term)
     # Second term is an expectation over samples from the marginal,
     # which are the off-diagonal elements of the scores matrix.
     marg_term = logmeanexp_nodiag(scores).exp()
-    return 1. + joint_term - marg_term
+    return -1. - joint_term + marg_term
 
 
 def nwj_lower_bound(scores):
