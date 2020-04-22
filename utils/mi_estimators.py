@@ -105,10 +105,10 @@ def dv_upper_lower_bound(t, device="cuda"):
     N = t.shape[-1]
     D = t.shape[0]
     pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
-    first_term = (t * pos_mask).sum().mean()
+    first_term = (t * pos_mask).sum() / pos_mask.sum()
     second_term = logmeanexp_nodiag(t)
-
-    return first_term - second_term
+    #print(first_term, second_term)
+    return -first_term + second_term
 
 
 def mine_lower_bound(f, buffer=None, momentum=0.9):
