@@ -9,9 +9,9 @@ prefix1=classifier_fc_jsd_prior
 prefix2=classifier_supervised_test
 
 bash slurm_scripts/launch_slurm_job.sh gpu classifier_stats_1 \
-    "python3 stability_test.py --encoder_stride ${stride} --classifier_ckpt=${classifer_ckpt_1} --input_layer ${mode} --gpu \
+    "python3 stability_test.py --encoder_stride ${stride} --classifier_ckpt=${classifier_ckpt_1} --input_layer ${mode} --gpu \
                   --prefix ${prefix1} --batch_size=64"
 
 bash slurm_scripts/launch_slurm_job.sh gpu classifier_stats_2 \
-    "python3 stability_test.py --encoder_stride ${stride} --classifier_ckpt=${classifer_ckpt_2} --input_layer ${mode} --gpu \
+    "python3 stability_test.py --encoder_stride ${stride} --classifier_ckpt=${classifier_ckpt_2} --input_layer ${mode} --gpu \
                   --prefix ${prefix2} --batch_size=64"

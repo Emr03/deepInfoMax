@@ -39,6 +39,9 @@ def get_attack_stats(args, model, loader, log):
         err_clean = (out.data.max(1)[1] != y).float().sum() / X.size(0)
         err_adv = (out_adv.data.max(1)[1] != y).float().sum() / X.size(0)
 
+        clean_errors.update(err_clean)
+        adv_errors.update(err_adv)
+
         # pass perturbed input through classifier's encoder, get perturbed representations
         Z_adv = classifier.encoder(X_adv, intermediate=True)
 
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir, exist_ok=True)
 
-    test_log = open("{}/test.log".format(workspace_dir), "w")
+    stats_log = open("{}/stats.log".format(workspace_dir), "w")
 
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
 
@@ -99,4 +102,4 @@ if __name__ == "__main__":
 
     classifier = classifier.to(args.device)
 
-    get_attack_stats(args, classifier, test_loader, log=test_log)
+    get_attack_stats(args, classifier, test_loader, log=stats_log)
