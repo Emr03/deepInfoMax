@@ -39,8 +39,10 @@ def evaluate_adversarial(args, model, loader):
 
     end = time.time()
     for i, (X, y) in enumerate(loader):
+
         if args.gpu:
             X, y = X.cuda(), y.cuda()
+
         out = model(Variable(X))
         ce_clean = nn.CrossEntropyLoss()(out, Variable(y))
         err_clean = (out.data.max(1)[1] != y).float().sum() / X.size(0)

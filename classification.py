@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from utils.data_loaders import *
 from models.mi_estimation import *
-from models.encoders import *
 from models.classifier import *
 from utils.argparser import argparser
 from utils import data_loaders
