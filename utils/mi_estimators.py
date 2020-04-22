@@ -25,18 +25,24 @@ def logmeanexp_nodiag(t, device="cuda"):
     return logsumexp - torch.log(torch.tensor(num_elem)).to(device)
 
 
-def tuba_lower_bound(scores, log_baseline=None):
+def tuba_lower_bound(scores, log_baseline=None, device="cuda"):
+
+    N = scores.shape[-1]
+    D = scores.shape[0]
+
     if log_baseline is not None:
         scores -= log_baseline[:, None]
 
     # First term is an expectation over samples from the joint,
     # which are the diagonal elmements of the scores matrix.
-    joint_term = scores.diag().mean()
+    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
+    joint_term = (scores * pos_mask).sum() / pos_mask.sum()
 
     # Second term is an expectation over samples from the marginal,
     # which are the off-diagonal elements of the scores matrix.
     marg_term = logmeanexp_nodiag(scores).exp()
     return 1. + joint_term - marg_term
+
 
 def nwj_lower_bound(scores):
     return tuba_lower_bound(scores - 1.)
@@ -169,7 +175,7 @@ def estimate_mutual_information(estimator, scores,
     if estimator == 'infonce':
         mi = infonce_lower_bound(scores)
     elif estimator == 'nwj':
-        mi = my_nwj_lower_bound(scores)
+        mi = nwj_lower_bound(scores)
     # elif estimator == 'tuba':
     #     mi = tuba_lower_bound(scores, log_baseline)
     elif estimator == 'js':
