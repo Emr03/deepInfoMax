@@ -97,8 +97,8 @@ if __name__ == "__main__":
     # classifier.load_state_dict(torch.load("classifier_supervised_new/classifier_supervised_new_checkpoint.pth",
     #                                       map_location=torch.device("cpu"))["classifier_state_dict"])
 
-        classifier.load_state_dict(torch.load("classifier_fc_jsd_prior/classifier_fc_jsd_prior_checkpoint.pth",
-                                          map_location=torch.device("cpu"))["classifier_state_dict"])
+    classifier.load_state_dict(torch.load("classifier_fc_jsd_prior/classifier_fc_jsd_prior_checkpoint.pth",
+                                      map_location=torch.device("cpu"))["classifier_state_dict"])
 
     # decoder = DecoderY(input_size=encoder.output_size)
     # decoder.load_state_dict(torch.load("decoder_jsd_new/decoder_jsd_new_checkpoint.pth",
