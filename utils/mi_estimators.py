@@ -67,17 +67,6 @@ def js_fgan_lower_bound(f):
                    torch.sum(F.softplus(f_diag))) / (n * (n - 1.))
     return first_term - second_term
 
-def my_nwj_lower_bound(t, device="cuda"):
-    N = t.shape[-1]
-    D = t.shape[0]
-    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
-    neg_mask = (torch.ones_like(t) - pos_mask)
-
-    print(torch.logsumexp((t-1), dim=(0, 1, 2)))
-    nwj = - (t * pos_mask).sum() / pos_mask.sum() \
-          + (torch.logsumexp((t-1), dim=(0, 1, 2)) - torch.log(torch.tensor(N * N * D * 1.0))).exp()
-
-    return nwj
 
 def my_js_lower_bound(t, device="cuda"):
     """
@@ -108,13 +97,16 @@ def js_lower_bound(f):
     return js + nwj_js
 
 
-def dv_upper_lower_bound(f):
+def dv_upper_lower_bound(t, device="cuda"):
     """
     Donsker-Varadhan lower bound, but upper bounded by using log outside.
     Similar to MINE, but did not involve the term for moving averages.
     """
-    first_term = f.diag().mean()
-    second_term = logmeanexp_nodiag(f)
+    N = t.shape[-1]
+    D = t.shape[0]
+    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
+    first_term = (t * pos_mask).sum().mean()
+    second_term = logmeanexp_nodiag(t)
 
     return first_term - second_term
 
