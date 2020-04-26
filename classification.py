@@ -39,21 +39,20 @@ if __name__ == "__main__":
     if not args.fully_supervised:
         # load encoder from checkpoint
         encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
-        # create classifier
-        if args.input_layer == "fc":
-            classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10)
 
-        elif args.input_layer == "conv":
-            classifier = ClassifierConv(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10)
+    # create classifier
+    if args.input_layer == "fc":
+        classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
+                                  freeze_encoder=not args.fully_supervised)
 
-        elif args.input_layer == "y":
-            classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10)
+    elif args.input_layer == "conv":
+        classifier = ClassifierConv(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
+                                    freeze_encoder=not args.fully_supervised)
 
-    # if args.cuda_ids and len(args.cuda_ids) > 1:
-    #     classifier = nn.DataParallel(classifier)
-    else:
-        classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10, freeze_encoder=False)
-    
+    elif args.input_layer == "y":
+        classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
+                                 freeze_encoder=not args.fully_supervised)
+
     classifier = classifier.to(args.device)
 
     opt = optim.Adam(classifier.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
