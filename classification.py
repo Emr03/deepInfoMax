@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # if args.cuda_ids and len(args.cuda_ids) > 1:
     #     classifier = nn.DataParallel(classifier)
     else:
-        classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10, freeze_encoder=False)
+        classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10, freeze_encoder=False)
     
     classifier = classifier.to(args.device)
 

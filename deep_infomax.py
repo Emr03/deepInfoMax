@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
-        loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu, prior_matching, D_opt)
+        loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu, prior_matching, D_opt, gamma=args.gamma)
         e += 1
         torch.save({
             'encoder_state_dict': DIM.module.global_encoder.state_dict(),

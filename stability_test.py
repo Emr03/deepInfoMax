@@ -51,8 +51,10 @@ def get_attack_stats(args, model, loader, log):
         l2_norms.update(Z_l2)
 
         # compute fraction of l1_norm
-        change_fraction = (torch.abs(Z_clean - Z_adv) / Z_clean).max()
-        change_fraction.update()
+        fraction = (torch.abs(Z_clean - Z_adv) / Z_clean)
+        print(fraction.shape)
+        print(fraction.max())
+        change_fraction.update(fraction.max())
 
         batch.set_description("Clean Err {} Adv Err {} L2 {} Frac {}".format(clean_errors.avg, adv_errors.avg,
                                                                              l2_norms.avg, change_fraction.avg))
@@ -67,7 +69,7 @@ def get_attack_stats(args, model, loader, log):
     print(' * Clean Error {clean_error.avg:.3f}\t'
           ' Adv Error {adv_errors.avg:.3f}\t'
           ' L2 norm {l2_norms.avg:.3f}\t'
-          ' L1 frac {change_frac:.3f}\t'
+          ' L1 frac {change_frac.avg:.3f}\t'
           .format(clean_error=clean_errors, adv_errors=adv_errors,
                   l2_norms=l2_norms, change_frac=change_fraction))
 

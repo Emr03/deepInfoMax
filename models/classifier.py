@@ -42,14 +42,14 @@ class ClassifierConv(nn.Module):
 
 class ClassifierFC(nn.Module):
 
-    def __init__(self, encoder, num_classes, hidden_units=200, freeze_encoder=True, dropout=0.1):
+    def __init__(self, encoder, num_classes, hidden_units=1024, freeze_encoder=True, dropout=0.1):
         super(ClassifierFC, self).__init__()
         self.encoder = encoder
         self.num_classes = num_classes
         self.input_size = encoder.local_encoder.output_size
         self.layer_1 = nn.Linear(1024, hidden_units)
         self.layer_2 = nn.Linear(hidden_units, num_classes)
-        self.model = nn.Sequential(self.layer_1, nn.Dropout(p=dropout), nn.ReLU(), self.layer_2)
+        self.model = nn.Sequential(nn.ReLU(), self.layer_1, nn.Dropout(p=dropout), nn.ReLU(), self.layer_2)
 
         if freeze_encoder:
             # freeze encoder, but reset layer1 to Trainable

@@ -23,7 +23,7 @@ echo "#!/bin/bash
 #SBATCH --mem=$[16*$resource]G
 #SBATCH --gres=gpu:${resource}
 #SBATCH --nodes=1
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 bash ${j_dir}/scripts/${j_name}.sh
 " > $j_dir/scripts/${j_name}.slrm
 
