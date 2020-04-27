@@ -41,17 +41,18 @@ if __name__ == "__main__":
         encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
 
     # create classifier
+    freeze_encoder = not args.fully_supervised or args.random_encoder
     if args.input_layer == "fc":
         classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
-                                  freeze_encoder=not args.fully_supervised)
+                                  freeze_encoder=freeze_encoder)
 
     elif args.input_layer == "conv":
         classifier = ClassifierConv(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
-                                    freeze_encoder=not args.fully_supervised)
+                                    freeze_encoder=freeze_encoder)
 
     elif args.input_layer == "y":
         classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
-                                 freeze_encoder=not args.fully_supervised)
+                                 freeze_encoder=freeze_encoder)
 
     classifier = classifier.to(args.device)
 
