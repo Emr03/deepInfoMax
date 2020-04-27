@@ -60,7 +60,7 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
             D_opt.zero_grad()
             prior_matching_loss = prior_matching(E).mean()
             
-            d_loss = dim_loss.mean() * beta + prior_matching_loss * gamma
+            d_loss = prior_matching_loss
 
             d_loss.backward(retain_graph=True)
             D_opt.step()

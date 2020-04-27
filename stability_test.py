@@ -71,7 +71,7 @@ def get_attack_stats(args, model, loader, log):
           ' L2 norm {l2_norms.avg:.3f}\t'
           ' L1 frac {change_frac.avg:.3f}\t'
           .format(clean_error=clean_errors, adv_errors=adv_errors,
-                  l2_norms=l2_norms, change_frac=change_fraction))
+                  l2_norms=l2_norms, change_frac=change_fraction), file=log)
 
 
 if __name__ == "__main__":
