@@ -131,12 +131,10 @@ class LocalDIM(nn.Module):
 
 class GlobalDIM(nn.Module):
 
-    # TODO: fix or discard
-
     def __init__(self, global_encoder, type="jsd"):
         super(GlobalDIM, self).__init__()
         self.global_encoder = global_encoder
-        input_size = self.global_encoder.local_encoder.output_size
+        input_size = self.global_encoder.local_encoder.output_size + self.global_encoder.output_size
         self.T = nn.Sequential(nn.Linear(input_size, 512),
                                nn.ReLU(),
                                nn.Linear(512, 512),
@@ -150,11 +148,11 @@ class GlobalDIM(nn.Module):
         :return:
         """
         # pass X through global encoder and obtain feature map C and global representation E
-        C, E = self.global_encoder(X)
-
-        # flatten C and concatenate with E
-        C = F.flatten(C)
-        EC = torch.cat([E, C], dim=1)
+        C, output = self.global_encoder.local_encoder(X)
+        # flatten output and concatenate with E
+        output = F.flatten(output)
+        E = self.global_encoder.fc_net(output)
+        EC = torch.cat([E, output], dim=1)
 
         # pass C, E positive pairs through linear layers to obtain a scalar
         pos_T = self.T(EC)
@@ -167,5 +165,5 @@ class GlobalDIM(nn.Module):
         # pass C, E negative pairs through linear layers to obtain a scalar
         neg_T = self.T(EC_neg)
 
-        # compute and return MI lower bound based on JSD, or infoNCE
+        # compute and return MI lower bound based on JSD
         return self.mi_fn(pos_T, neg_T)
