@@ -314,4 +314,49 @@ def train_classifier_adversarial(loader, model, opt, epoch, log, verbose, gpu, a
     log.flush()
     return clean_errors.avg
 
+def ndm_train(loader, model, opt, epoch, log, verbose, gpu):
 
+    model.train()
+    ndm = AverageMeter()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+        if gpu:
+            X, y = X.cuda(), y.cuda()
+
+        ndm_loss= model(X)
+        ndm.update(ndm_loss)
+
+        opt.zero_grad()
+        ndm_loss.backward()
+        opt.step()
+
+        batch.set_description("Epoch {} Loss {}".format(epoch, ndm.avg))
+        if verbose and i % verbose == 0:
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                epoch, i, len(loader),
+                loss=ndm), file=log)
+
+        log.flush()
+
+    return ndm.avg
+
+def ndm_eval(loader, model, log, gpu):
+
+    model.eval()
+    ndm = AverageMeter()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+        if gpu:
+            X, y = X.cuda(), y.cuda()
+
+        ndm_loss = model(X)
+        ndm.update(ndm_loss)
+
+        batch.set_description("iter {} Loss {}".format(i, ndm.avg))
+        print('iter: [{0}/{1}]\t'
+              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+            i, len(loader),
+            loss=ndm), file=log)
+
+        log.flush()
