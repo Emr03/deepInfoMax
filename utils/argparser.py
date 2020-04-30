@@ -39,7 +39,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument('--attack', type=str, default="pgd")
     parser.add_argument('--epsilon', type=float, default=0.03)
     parser.add_argument('--alpha', type=float, default=0.01)
-    parser.add_argument('--num_steps', type=int, default=1000)
+    parser.add_argument('--num_steps', type=int, default=20)
 
     # other arguments
     parser.add_argument('--prefix')
