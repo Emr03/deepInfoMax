@@ -35,10 +35,12 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride)
-    if not args.fully_supervised:
-        # load encoder from checkpoint
-        encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
+    if not args.classifier_ckpt:
+        encoder = GlobalEncoder(stride=args.encoder_stride)
+
+        if not args.fully_supervised:
+            # load encoder from checkpoint
+            encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
 
     # create classifier
     freeze_encoder = not args.fully_supervised or args.random_encoder
@@ -55,12 +57,20 @@ if __name__ == "__main__":
                                  freeze_encoder=freeze_encoder)
 
     classifier = classifier.to(args.device)
-
     opt = optim.Adam(classifier.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[15, 50, 100, 200, 300], gamma=0.5)
-    # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     test_err = 1.0
+
+    if args.classifier_ckpt:
+        # resume training
+        ckpt = torch.load(args.classifier_ckpt)
+        classifier.load_state_dict(ckpt["classifier_state_dict"])
+        opt.load_state_dict(ckpt["opt"])
+        e = ckpt["epoch"]
+        test_err = ckpt["test_err"]
+
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[15, 50, 100, 200, 300], gamma=0.5)
+    # if num of visible devices > 1, use DataParallel wrapper
     while e < args.epochs:
         if args.classifier_adversarial:
             loss = train_eval.train_classifier_adversarial(train_loader, classifier, opt, e, train_log,
