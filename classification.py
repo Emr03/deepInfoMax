@@ -24,9 +24,6 @@ if __name__ == "__main__":
     # save arguments as json file
     # json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
 
-    train_log = open("{}/train.log".format(workspace_dir), "w")
-    test_log = open("{}/test.log".format(workspace_dir), "w")
-
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
 
@@ -37,6 +34,10 @@ if __name__ == "__main__":
 
     if not args.classifier_ckpt:
         encoder = GlobalEncoder(stride=args.encoder_stride)
+
+        # open logs in write mode
+        train_log = open("{}/train.log".format(workspace_dir), "w")
+        test_log = open("{}/test.log".format(workspace_dir), "w")
 
         if not args.fully_supervised:
             # load encoder from checkpoint
@@ -62,6 +63,10 @@ if __name__ == "__main__":
     test_err = 1.0
 
     if args.classifier_ckpt:
+        # open logs in append mode
+        train_log = open("{}/train.log".format(workspace_dir), "a")
+        test_log = open("{}/test.log".format(workspace_dir), "a")
+
         # resume training
         ckpt = torch.load(args.classifier_ckpt)
         classifier.load_state_dict(ckpt["classifier_state_dict"])
