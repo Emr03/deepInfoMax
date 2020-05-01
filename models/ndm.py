@@ -31,7 +31,7 @@ class NeuralDependencyMeasure(nn.Module):
                                    nn.Linear(1000, 200),
                                    nn.ReLU(),
                                    nn.Linear(200, 1),
-                                   nn.Sigmoid())
+                                   )
 
         self.encoder.eval()
 
@@ -43,8 +43,14 @@ class NeuralDependencyMeasure(nn.Module):
         shuffled_E = random_permute(E)
         shuffled_logits = self.model(shuffled_E)
         encoder_logits = self.model(E)
-        loss = -torch.log(encoder_logits + 1E-04).mean() - torch.log(torch.ones_like(shuffled_logits) - shuffled_logits + 1E-04).mean()
-        return loss
+        loss = -torch.log(nn.Sigmoid()(encoder_logits) + 1E-04).mean() - \
+               torch.log(torch.ones_like(shuffled_logits) - nn.Sigmoid()(shuffled_logits) + 1E-04).mean()
+
+        # compute DV estimate of MI
+        first_term = encoder_logits.mean() # scores for joint distribution
+        second_term = torch.logsumexp(shuffled_logits, dim=0) - torch.log(shuffled_logits.size(0)) # scores for marginal
+        dv = first_term - second_term
+        return loss, dv
 
 
 

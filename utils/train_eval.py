@@ -318,45 +318,52 @@ def ndm_train(loader, model, opt, epoch, log, verbose, gpu):
 
     model.train()
     ndm = AverageMeter()
+    mutual_info = AverageMeter()
+
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
 
-        ndm_loss=model(X)
+        ndm_loss, mi = model(X)
         ndm.update(ndm_loss)
-
+        mutual_info.update(mi)
         opt.zero_grad()
         ndm_loss.backward()
         opt.step()
 
-        batch.set_description("Epoch {} Loss {}".format(epoch, ndm.avg))
+        batch.set_description("Epoch {} Loss {} MI {}".format(epoch, ndm.avg, mutual_info.avg))
         if verbose and i % verbose == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'MI {mutual_info.val:.4f} ({mutual_info.avg:.4f})\t'.format(
                 epoch, i, len(loader),
-                loss=ndm), file=log)
+                loss=ndm, mutual_info=mutual_info), file=log)
 
         log.flush()
 
     return ndm.avg
 
-def ndm_eval(loader, model, log, gpu):
+def ndm_eval(loader, model, epoch, log, gpu):
 
     model.eval()
     ndm = AverageMeter()
+    mutual_info = AverageMeter()
+
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
 
-        ndm_loss = model(X)
+        ndm_loss, mi = model(X)
         ndm.update(ndm_loss)
+        mutual_info.update(mi)
 
-        batch.set_description("iter {} Loss {}".format(i, ndm.avg))
-        print('iter: [{0}/{1}]\t'
-              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
-            i, len(loader),
-            loss=ndm), file=log)
+        batch.set_description("Epoch {} Loss {} MI {}".format(epoch, ndm.avg, mutual_info.avg))
+        print('Epoch: [{0}][{1}/{2}]\t'
+              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+              'MI {mutual_info.val:.4f} ({mutual_info.avg:.4f})\t'.format(
+            epoch, i, len(loader),
+            loss=ndm, mutual_info=mutual_info), file=log)
 
         log.flush()
