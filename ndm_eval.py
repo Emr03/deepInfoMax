@@ -32,7 +32,7 @@ if __name__ == "__main__":
     np.random.seed(0)
 
     encoder = GlobalEncoder(stride=args.encoder_stride)
-    encoder.load_state_dict(torch.load(args.classifier_ckpt,
+    encoder.load_state_dict(torch.load(args.encoder_ckpt,
                                           map_location=args.device)["encoder_state_dict"])
 
     ndm_disc = NeuralDependencyMeasure(encoder=encoder)
@@ -41,10 +41,10 @@ if __name__ == "__main__":
     opt = optim.Adam(ndm_disc.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     e = 0
     while e < args.epochs:
-        loss = train_eval.ndm_train(model=encoder, loader=train_loader, opt=opt, epoch=e, verbose=args.verbose,
+        loss = train_eval.ndm_train(model=ndm_disc, loader=train_loader, opt=opt, epoch=e, verbose=args.verbose,
                                     log=ndm_train_log, gpu=args.gpu)
 
-        loss = train_eval.ndm_eval(model=encoder, loader=test_loader, log=ndm_eval_log, gpu=args.gpu)
+        loss = train_eval.ndm_eval(model=ndm_disc, loader=test_loader, log=ndm_eval_log, gpu=args.gpu)
         e += 1
         torch.save({
             'ndm_state_dict': ndm_disc.state_dict(),

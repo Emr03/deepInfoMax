@@ -31,9 +31,8 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(args.seed)
     random.seed(0)
     np.random.seed(0)
-
+    encoder = GlobalEncoder(stride=args.encoder_stride)
     if not args.classifier_ckpt:
-        encoder = GlobalEncoder(stride=args.encoder_stride)
 
         # open logs in write mode
         train_log = open("{}/train.log".format(workspace_dir), "w")

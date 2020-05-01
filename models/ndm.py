@@ -21,11 +21,11 @@ class NeuralDependencyMeasure(nn.Module):
 
     def forward(self, X):
 
-        with torch.no_grad:
-            E = self.encoder(X)
+        with torch.no_grad():
+            C, E = self.encoder(X)
         # shuffle encoder units to break correlations between units
         idx = torch.randperm(E.shape[-1])
-        shuffled_E = E[idx]
+        shuffled_E = E[:, idx]
         shuffled_logits = self.model(shuffled_E)
         encoder_logits = self.model(E)
         loss = -torch.log(encoder_logits + 1E-04).mean() - torch.log(torch.ones_like(shuffled_logits) - shuffled_logits + 1E-04).mean()

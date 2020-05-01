@@ -323,7 +323,7 @@ def ndm_train(loader, model, opt, epoch, log, verbose, gpu):
         if gpu:
             X, y = X.cuda(), y.cuda()
 
-        ndm_loss= model(X)
+        ndm_loss=model(X)
         ndm.update(ndm_loss)
 
         opt.zero_grad()
