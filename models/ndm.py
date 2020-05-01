@@ -4,6 +4,22 @@ import torch.nn.functional as F
 from models.encoders import *
 from utils.mi_estimators import *
 
+
+def random_permute(X):
+
+    '''Randomly permuts a tensor along the batch axis independently for each feature.
+    Args:
+        X: Input tensor.
+    Returns:
+        torch.Tensor: shuffled tensor.
+    '''
+    # random floats in X-like tensor
+    b = torch.rand(X.size()).cuda()
+    idx = b.sort(0)[1] # sort b values along columns, choose indices (this is a way to generate random permutations)
+    adx = torch.arange(0, X.size(1)).long()
+    return X[idx, adx[None, :]] # shuffle batch elements of X
+
+
 class NeuralDependencyMeasure(nn.Module):
 
     def __init__(self, encoder, encoder_dim=64):
@@ -24,8 +40,7 @@ class NeuralDependencyMeasure(nn.Module):
         with torch.no_grad():
             C, E = self.encoder(X)
         # shuffle encoder units to break correlations between units
-        idx = torch.randperm(E.shape[-1])
-        shuffled_E = E[:, idx]
+        shuffled_E = random_permute(E)
         shuffled_logits = self.model(shuffled_E)
         encoder_logits = self.model(E)
         loss = -torch.log(encoder_logits + 1E-04).mean() - torch.log(torch.ones_like(shuffled_logits) - shuffled_logits + 1E-04).mean()
