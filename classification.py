@@ -57,7 +57,7 @@ if __name__ == "__main__":
                                  freeze_encoder=freeze_encoder)
 
     classifier = classifier.to(args.device)
-    opt = optim.Adam(classifier.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    opt = optim.Adam(classifier.parameters(), lr=args.lr)
     e = 0
     test_err = 1.0
 
@@ -69,12 +69,17 @@ if __name__ == "__main__":
         # resume training
         ckpt = torch.load(args.classifier_ckpt)
         classifier.load_state_dict(ckpt["classifier_state_dict"])
-        opt.load_state_dict(ckpt["opt"])
+        #opt.load_state_dict(ckpt["opt"])
         e = ckpt["epoch"]
         test_err = ckpt["test_err"]
 
     #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[15, 50, 100, 200, 300], gamma=0.5)
     # if num of visible devices > 1, use DataParallel wrapper
+    if args.eval_only:
+        e=1000
+        test_err_ = train_eval.eval_classifier(test_loader, classifier, e, test_log, verbose=args.verbose, gpu=args.gpu)
+        print(test_err, test_err_)
+
     while e < args.epochs:
         if args.classifier_adversarial:
             loss = train_eval.train_classifier_adversarial(train_loader, classifier, opt, e, train_log,

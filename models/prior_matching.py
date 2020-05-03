@@ -28,7 +28,8 @@ class PriorMatchingDiscriminator(nn.Module):
 
     def forward(self, E):
         N = E.shape[0]
-        enc_logits = self.model(E)
+        E = nn.Sigmoid()(E)
+        enc_logits = (self.model(E))
         samples_prior = torch.rand(size=(N, self.encoder_dim), device=self.device)
         prior_logits = self.model(samples_prior)
         # prior_logits = self.model(self.prior.sample_n(n=N))

@@ -33,7 +33,8 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument('--fully_supervised', action="store_true")
     parser.add_argument('--random_encoder', action="store_true")
     parser.add_argument('--classifier_adversarial', action="store_true")
-    
+    parser.add_argument('--eval_only', action="store_true")
+
     # attack arguments
     parser.add_argument('--classifier_ckpt', type=str, default=None)
     parser.add_argument('--attack', type=str, default="pgd")
