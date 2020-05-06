@@ -34,12 +34,16 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser.add_argument('--random_encoder', action="store_true")
     parser.add_argument('--classifier_adversarial', action="store_true")
     
-    # attack arguments
+    # gradient attack arguments
     parser.add_argument('--classifier_ckpt', type=str, default=None)
     parser.add_argument('--attack', type=str, default="pgd")
     parser.add_argument('--epsilon', type=float, default=0.03)
     parser.add_argument('--alpha', type=float, default=0.01)
     parser.add_argument('--num_steps', type=int, default=20)
+
+    # transfer attack arguments
+    parser.add_argument('--source_model_ckpt', type=str, default=None)
+    parser.add_argument('--target_model_ckpt', type=str, default=None)
 
     # other arguments
     parser.add_argument('--prefix')
