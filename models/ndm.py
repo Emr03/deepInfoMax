@@ -48,7 +48,8 @@ class NeuralDependencyMeasure(nn.Module):
 
         # compute DV estimate of MI
         first_term = encoder_logits.mean() # scores for joint distribution
-        second_term = torch.logsumexp(shuffled_logits, dim=0) - torch.log(shuffled_logits.size(0)) # scores for marginal
+        second_term = torch.exp(shuffled_logits - 1.).mean()
+        #second_term = torch.logsumexp(shuffled_logits, dim=0).mean() - torch.log(torch.tensor(shuffled_logits.size(0)*1.)) # scores for marginal
         dv = first_term - second_term
         return loss, dv
 
