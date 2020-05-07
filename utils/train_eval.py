@@ -69,7 +69,7 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
             e_loss = dim_loss * beta - prior_matching_loss * gamma
             e_loss.backward()
             enc_opt.step()
-            T_opt.step()
+            T_opt.step() #
             prior_losses.update(prior_matching_loss.item(), X.size(0))
 
         else:
