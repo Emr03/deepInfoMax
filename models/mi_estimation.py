@@ -109,13 +109,19 @@ class LocalDIM(nn.Module):
         scores = torch.bmm(embedded_local, embedded_global.transpose(2, 1))
         return scores
 
-    def forward(self, X):
+    def forward(self, X, return_scores=False, E=None):
         """
         :param X:
         :return:
         """
-        # pass X through global encoder and obtain feature map C and global representation E
-        C, Enc = self.global_encoder(X)
+
+        if E:
+            Enc = E
+            C, _ = self.global_encoder(X)
+
+        else:
+            # pass X through global encoder and obtain feature map C and global representation E
+            C, Enc = self.global_encoder(X)
 
         if self.concat:
             T = self.forward_concat(E=Enc, C=C)
@@ -127,6 +133,9 @@ class LocalDIM(nn.Module):
         #print(T.shape)
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
         mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
+        if return_scores:
+            return mi, Enc, T
+
         return mi, Enc
 
 class GlobalDIM(nn.Module):
