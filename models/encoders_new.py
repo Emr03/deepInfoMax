@@ -20,7 +20,7 @@ class LocalEncoder(nn.Module):
             self.main = nn.Sequential(
                 # input is (nc) x 32 x 32
                 nn.Conv2d(num_channels, ndf, kernel_size=4, stride=stride, padding=padding, bias=False),
-                nn.BatchNorm2d(ndf),
+                #nn.BatchNorm2d(ndf),
                 #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True),
                 # state size. 64 x 29 x 29, or 16 x 16
@@ -32,11 +32,11 @@ class LocalEncoder(nn.Module):
                 # state size. 128 x 26 x 26 or 8 x 8)
             
             self.features_shape = [ndf * 2, 8, 8]
-            self.output_shape = [ndf * 4, 4, 4]
+            self.output_shape = [ndf * 4 * 2, 4, 4]
             
             self.output_layer = nn.Sequential(
-                nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=stride, padding=padding, bias=False),
-                nn.BatchNorm2d(ndf * 4 ),
+                nn.Conv2d(ndf * 2, ndf * 4 * 2, kernel_size=4, stride=stride, padding=padding, bias=False),
+                nn.BatchNorm2d(ndf * 4 * 2),
                 #nn.Dropout2d(p=dropout),
                 nn.ReLU(inplace=True))
         

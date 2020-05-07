@@ -57,7 +57,7 @@ if __name__ == "__main__":
                                  freeze_encoder=freeze_encoder)
 
     classifier = classifier.to(args.device)
-    opt = optim.Adam(classifier.parameters(), lr=args.lr)
+    opt = optim.Adam(classifier.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     e = 0
     test_err = 1.0
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             loss = train_eval.train_classifier_adversarial(train_loader, classifier, opt, e, train_log,
                                                            verbose=args.verbose, gpu=args.gpu, args=args)
 
-            clean_errors, adv_errors = evaluate_adversarial(args, classifier, test_loader)
+            clean_errors, adv_errors = evaluate_adversarial(args, classifier, test_loader, test_log, epoch=e)
             test_err_ = adv_errors
             
 

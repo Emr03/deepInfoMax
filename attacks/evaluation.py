@@ -21,7 +21,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def evaluate_adversarial(args, model, loader):
+def evaluate_adversarial(args, model, loader, test_log, epoch):
     """
     Only implements adversarial attacks on classification for now
     :param opt:
@@ -61,10 +61,10 @@ def evaluate_adversarial(args, model, loader):
         err_adv = (out.data.max(1)[1] != y).float().sum() / X.size(0)
 
         # print to logfile
-        print("attack: ", args.attack, " clean loss: ", ce_clean.item(),
+        print("Epoch: ", epoch, "attack: ", args.attack,
               " clean_error: ", err_clean,
-              " adv_err: ", err_adv,
-              " clean_err: ", err_clean)
+              " adv_error: ", err_adv,
+              file=test_log)
 
         # measure accuracy and record loss
         clean_losses.update(ce_clean.item(), X.size(0))
@@ -76,9 +76,9 @@ def evaluate_adversarial(args, model, loader):
         batch_time.update(time.time() - end)
         end = time.time()
 
-    print(' * Clean Error {clean_error.avg:.3f}\t'
+    print(' Epoch {epoch} \t Clean Error {clean_error.avg:.3f}\t'
           ' Adv Error {adv_errors.avg:.3f}\t'
-          .format(clean_error=clean_errors, adv_errors=adv_errors))
+          .format(epoch=epoch, clean_error=clean_errors, adv_errors=adv_errors))
 
     return clean_errors.avg, adv_errors.avg
 

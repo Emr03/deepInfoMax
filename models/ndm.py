@@ -39,6 +39,8 @@ class NeuralDependencyMeasure(nn.Module):
 
         with torch.no_grad():
             C, E = self.encoder(X)
+        
+        E = nn.Sigmoid()(E)
         # shuffle encoder units to break correlations between units
         shuffled_E = random_permute(E)
         shuffled_logits = self.model(shuffled_E)
@@ -46,12 +48,12 @@ class NeuralDependencyMeasure(nn.Module):
         loss = -torch.log(nn.Sigmoid()(encoder_logits) + 1E-04).mean() - \
                torch.log(torch.ones_like(shuffled_logits) - nn.Sigmoid()(shuffled_logits) + 1E-04).mean()
 
-        # compute DV estimate of MI
+        # compute NWJ or DV estimate of KL
         first_term = encoder_logits.mean() # scores for joint distribution
-        second_term = torch.exp(shuffled_logits - 1.).mean()
-        #second_term = torch.logsumexp(shuffled_logits, dim=0).mean() - torch.log(torch.tensor(shuffled_logits.size(0)*1.)) # scores for marginal
-        dv = first_term - second_term
-        return loss, dv
+        #second_term = torch.exp(shuffled_logits - 1.).mean()
+        second_term = torch.logsumexp(shuffled_logits, dim=0).mean() - torch.log(torch.tensor(shuffled_logits.size(0)*1.)) # scores for marginal
+        kl = first_term - second_term
+        return loss, kl
 
 
 

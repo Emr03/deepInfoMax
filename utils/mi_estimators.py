@@ -22,7 +22,7 @@ def logmeanexp_nodiag(t, device="cuda"):
     D = t.shape[0]
     inf_mask = torch.diag(np.inf * torch.ones(N)).to(device).unsqueeze(0).repeat(D, 1, 1)
     logsumexp = torch.logsumexp(t - inf_mask, dim=(0, 1, 2))
-    print(logsumexp)
+    #print(logsumexp)
     num_elem = D * N * N - D * N * 1.
     return logsumexp - torch.log(torch.tensor(num_elem)).to(device)
 
