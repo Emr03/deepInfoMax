@@ -115,7 +115,7 @@ class LocalDIM(nn.Module):
         :return:
         """
 
-        if E:
+        if E is not None:
             Enc = E
             C, _ = self.global_encoder(X)
 

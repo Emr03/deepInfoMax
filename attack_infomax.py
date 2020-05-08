@@ -12,7 +12,7 @@ from utils.train_eval import AverageMeter
 import random
 import numpy as np
 import json
-import tqdm
+from tqdm import tqdm
 
 
 def get_attack_stats(args, classifier, discriminator, loader, log):
@@ -45,16 +45,16 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
         adv_errors.update(err_adv)
 
         # evaluate the critic scores for X and E
-        mi, E, scores = discriminator(X, return_scores=True)
+        mi, E, scores = discriminator(X=X, return_scores=True)
 
         # evaluate the critic scores for X_adv and E_adv
-        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X_adv, return_scores=True)
+        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X=X_adv, return_scores=True)
 
         # evaluate the critic scores for X_adv and E_clean
         mi_adv_clean, _, scores_adv_clean = discriminator(X_adv, E=E, return_scores=True)
 
         # evaluate the critic scores for X, E_adv
-        mi_clean_adv, _, scores_clean_adv = discriminator(X, E_adv, return_scores=True)
+        mi_clean_adv, _, scores_clean_adv = discriminator(X, E=E_adv, return_scores=True)
 
         batch.set_description("MI(X, E) {} MI(X_adv, E_adv) {} MI(X_adv, E) {} MI(X, E_adv) {}".format(mi, mi_adv_adv,
                                                                                                        mi_adv_clean,
@@ -73,9 +73,6 @@ if __name__ == "__main__":
     workspace_dir = "experiments/{}".format(args.prefix)
     if not os.path.isdir(workspace_dir):
         os.mkdir(workspace_dir)
-
-    # save arguments as json file
-    json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
 
     attack_log = open("{}/attack.log".format(workspace_dir), "w")
 
@@ -106,8 +103,9 @@ if __name__ == "__main__":
     #     classifier = nn.DataParallel(classifier)
 
     DIM = LocalDIM(encoder, type=args.mi_estimator)
-    DIM.load_state_dict(torch.load(args.encoder_ckpt)["discriminator_state_dict"])
+    DIM = nn.DataParallel(DIM).to(args.device)
+    DIM.module.T.load_state_dict(torch.load(args.encoder_ckpt)["discriminator_state_dict"])
     classifier = classifier.to(args.device)
-    discriminator = DIM.T.to(args.device)
+    discriminator = DIM.module
     get_attack_stats(args, classifier, discriminator, test_loader, log=attack_log)
 

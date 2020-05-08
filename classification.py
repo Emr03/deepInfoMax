@@ -46,15 +46,15 @@ if __name__ == "__main__":
     freeze_encoder = not args.fully_supervised or args.random_encoder
     if args.input_layer == "fc":
         classifier = ClassifierFC(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
-                                  freeze_encoder=freeze_encoder)
+                                  freeze_encoder=freeze_encoder, linear=args.linear)
 
     elif args.input_layer == "conv":
         classifier = ClassifierConv(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
-                                    freeze_encoder=freeze_encoder)
+                                    freeze_encoder=freeze_encoder, linear=args.linear)
 
     elif args.input_layer == "y":
         classifier = ClassifierY(encoder=encoder, dropout=args.dropout, hidden_units=args.hidden_units, num_classes=10,
-                                 freeze_encoder=freeze_encoder)
+                                 freeze_encoder=freeze_encoder, linear=args.linear)
 
     classifier = classifier.to(args.device)
     opt = optim.Adam(classifier.parameters(), lr=args.lr, weight_decay=args.weight_decay)
