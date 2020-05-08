@@ -13,7 +13,7 @@ import random
 import numpy as np
 import json
 import tqdm
-
+jj
 def get_attack_stats(args, classifier, discriminator, loader, log):
 
     clean_errors = AverageMeter()

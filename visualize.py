@@ -94,11 +94,14 @@ if __name__ == "__main__":
         classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
     # load classifier from checkpoint
-    classifier.load_state_dict(torch.load("classifier_supervised_adversarial_200_y_checkpoint.pth",
-                                          map_location=torch.device("cpu"))["classifier_state_dict"])
+    # classifier.load_state_dict(torch.load("classifier_supervised_adversarial_200_y_checkpoint.pth",
+    #                                       map_location=torch.device("cpu"))["classifier_state_dict"])
 
     # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_jsd_prior_matching_new_checkpoint.pth",
     #                                   map_location=torch.device("cpu"))["classifier_state_dict"])
+
+    classifier.load_state_dict(torch.load("classifier_supervised_fc/classifier_supervised_fc_checkpoint.pth",
+                                          map_location=torch.device("cpu"))["classifier_state_dict"])
 
     # decoder = DecoderY(input_size=encoder.output_size)
     # decoder.load_state_dict(torch.load("decoder_jsd_new/decoder_jsd_new_checkpoint.pth",
