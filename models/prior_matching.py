@@ -28,15 +28,15 @@ class PriorMatchingDiscriminator(nn.Module):
 
     def forward(self, E):
         N = E.shape[0]
-        E = nn.Sigmoid()(E)
-        enc_logits = (self.model(E))
+        E = nn.Sigmoid()(E) # we match to prior distribution after applying the Sigmoid activation, prevents large scaling of Z
+        enc_logits = self.model(E)
         samples_prior = torch.rand(size=(N, self.encoder_dim), device=self.device)
         prior_logits = self.model(samples_prior)
-        # prior_logits = self.model(self.prior.sample_n(n=N))
         # output of discriminator represents log(density ratio) of prior / mixture, (prob(prior)/[prob(encoder) + prob(prior)]) = e^D
-        # then the loss is the cross entropy
-        loss = -torch.log(prior_logits + 1E-04).mean() - torch.log(torch.ones_like(enc_logits) - enc_logits + 1E-04).mean()
-        return loss
+        # then the loss is the non-saturating generator loss
+        gen_loss = -torch.log(enc_logits + 1E-04).mean()
+        disc_loss = -torch.log(prior_logits + 1E-04).mean() - torch.log(torch.ones_like(enc_logits) - enc_logits + 1E-04).mean()
+        return disc_loss, gen_loss
 
 
 

@@ -58,19 +58,17 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
 
         if prior_matching:
             D_opt.zero_grad()
-            prior_matching_loss = prior_matching(E).mean()
-            
-            d_loss = prior_matching_loss
-
+            d_loss, prior_matching_loss = prior_matching(E)
+          
             d_loss.backward(retain_graph=True)
             D_opt.step()
 
             enc_opt.zero_grad()
-            e_loss = dim_loss * beta - prior_matching_loss * gamma
+            e_loss = dim_loss * beta + prior_matching_loss * gamma
             e_loss.backward()
             enc_opt.step()
-            T_opt.step() #
-            prior_losses.update(prior_matching_loss.item(), X.size(0))
+            T_opt.step()
+            prior_losses.update(d_loss.item(), X.size(0))
 
         else:
             dim_loss.backward()
@@ -173,6 +171,10 @@ def eval_classifier(loader, model, epoch, log, verbose, gpu):
                 data_time=data_time, loss=losses, errors=errors), file=log)
 
         log.flush()
+
+    print('Epoch: [{0}]\t'
+            'Loss {loss.avg:.3f}\t'
+            'Error {errors.avg:.3f}'.format(epoch, loss=losses, errors=errors), file=log) 
 
     return errors.avg
 
