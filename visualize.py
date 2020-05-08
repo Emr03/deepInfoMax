@@ -100,8 +100,11 @@ if __name__ == "__main__":
     # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_jsd_prior_matching_new_checkpoint.pth",
     #                                   map_location=torch.device("cpu"))["classifier_state_dict"])
 
-    classifier.load_state_dict(torch.load("classifier_supervised_fc/classifier_supervised_fc_checkpoint.pth",
-                                          map_location=torch.device("cpu"))["classifier_state_dict"])
+    classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_nce_1/classifier_fc_local_infomax_encoder_nce_1_checkpoint.pth",
+                                       map_location=torch.device("cpu"))["classifier_state_dict"])
+
+    # classifier.load_state_dict(torch.load("classifier_supervised_fc/classifier_supervised_fc_checkpoint.pth",
+    #                                       map_location=torch.device("cpu"))["classifier_state_dict"])
 
     # decoder = DecoderY(input_size=encoder.output_size)
     # decoder.load_state_dict(torch.load("decoder_jsd_new/decoder_jsd_new_checkpoint.pth",
@@ -113,10 +116,4 @@ if __name__ == "__main__":
     #evaluation.evaluate_adversarial(args, model=classifier, loader=test_loader)
     for X, Y in test_loader:
         visualize_attacks(classifier, None, X, Y, args)
-
-
-
-
-
-
 

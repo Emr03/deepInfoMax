@@ -13,13 +13,12 @@ import random
 import numpy as np
 import json
 import tqdm
-jj
+
+
 def get_attack_stats(args, classifier, discriminator, loader, log):
 
     clean_errors = AverageMeter()
     adv_errors = AverageMeter()
-    l2_norms = AverageMeter() # l2 norm between representations for clean input and adversarial input, proxy for stability
-    change_fraction = AverageMeter()
 
     classifier.eval()
 
@@ -45,9 +44,6 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
         clean_errors.update(err_clean)
         adv_errors.update(err_adv)
 
-        # pass perturbed input through classifier's encoder, get perturbed representations
-        Z_adv = classifier.encoder(X_adv, intermediate=True)
-
         # evaluate the critic scores for X and E
         mi, E, scores = discriminator(X, return_scores=True)
 
@@ -66,7 +62,6 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
         # print to logfile
         print("Error Clean {} Error Adv{}, MI(X, E) {} MI(X_adv, E_adv) {} MI(X_adv, E) {} MI(X, E_adv) {}".format(
             clean_errors.avg, adv_errors.avg, mi, mi_adv_adv, mi_adv_clean, mi_clean_adv), file=log)
-
 
 
 if __name__ == "__main__":
