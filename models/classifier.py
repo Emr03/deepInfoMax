@@ -62,8 +62,10 @@ class ClassifierFC(nn.Module):
             freeze_weights(encoder)
             self.encoder.eval()
             
-    def forward(self, X):
+    def forward(self, X, intermediate=True):
         Z = self.encoder(X, intermediate=True)
+        if intermediate:
+            return Z, self.model(Z)
         return self.model(Z)
 
     def train(self):
@@ -93,8 +95,10 @@ class ClassifierY(nn.Module):
             freeze_weights(self.encoder)
             self.encoder.eval()
 
-    def forward(self, X):
+    def forward(self, X, intermediate=False):
         C, E = self.encoder(X)
+        if intermediate:
+            return E, self.model(E)
         return self.model(E)
 
     def train(self):
