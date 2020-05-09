@@ -28,7 +28,7 @@ class PriorMatchingDiscriminator(nn.Module):
 
     def forward(self, E):
         N = E.shape[0]
-        E = nn.Sigmoid()(E) # we match to prior distribution after applying the Sigmoid activation, prevents large scaling of Z
+        #E = nn.Sigmoid()(E) # we match to prior distribution after applying the Sigmoid activation, prevents large scaling of Z
         enc_logits = self.model(E)
         samples_prior = torch.rand(size=(N, self.encoder_dim), device=self.device)
         prior_logits = self.model(samples_prior)
