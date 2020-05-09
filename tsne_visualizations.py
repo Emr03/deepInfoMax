@@ -4,6 +4,8 @@ from models.classifier import *
 from models.encoders import *
 import numpy as np
 from sklearn.manifold import TSNE
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from utils.argparser import argparser
 from utils import data_loaders
@@ -85,7 +87,7 @@ if __name__ == "__main__":
     np.random.seed(0)
 
     encoder = GlobalEncoder(stride=args.encoder_stride)
-
+    
     # create classifier
     if args.input_layer == "fc":
         classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
@@ -97,7 +99,8 @@ if __name__ == "__main__":
         classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
     # load classifier from checkpoint
-    classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"])
+    classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"]) 
+    classifier.to(args.device)
 
     Z = []
     pred = []
@@ -108,21 +111,21 @@ if __name__ == "__main__":
             X, y = X.cuda(), y.cuda()
             with torch.no_grad():
                 z, logits = classifier(X, intermediate=True)
-                Z.append(z.detach().numpy())
-                pred.append(logits.max(-1)[1].detach().numpy())
-                Y.append(y.detach().numpy())
+                Z.append(z.cpu().detach().numpy())
+                pred.append(logits.max(-1)[1].cpu().detach().numpy())
+                Y.append(y.cpu().detach().numpy())
 
-        Z = np.concatenate(Z, axis=0)
-        pred = np.concatenate(pred, axis=0)
-        Y = np.concatenate(Y, axis=0)
+    Z = np.concatenate(Z, axis=0)
+    pred = np.concatenate(pred, axis=0)
+    Y = np.concatenate(Y, axis=0)
 
-        # make visualization for ground truth labels
-        z_list = sort_by_label(Z, Y, num_classes=10)
-        tsne(z_list, filename="{}/label_tsne.png".format(workspace_dir))
+    # make visualization for ground truth labels
+    z_list, y_list = sort_by_label(Z, Y, num_classes=10)
+    tsne(z_list, filename="{}/label_tsne.png".format(workspace_dir))
 
-        # make visualization for predicted labels
-        z_list = sort_by_label(Z, pred, num_classes=10)
-        tsne(z_list, filename="{}/pred_tsne.png".format(workspace_dir))
+    # make visualization for predicted labels
+    z_list, pred_list = sort_by_label(Z, pred, num_classes=10)
+    tsne(z_list, filename="{}/pred_tsne.png".format(workspace_dir))
 
 
 
