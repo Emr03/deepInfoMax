@@ -9,10 +9,11 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from utils.argparser import argparser
 from utils import data_loaders
+from attacks.gradient_untargeted import pgd, fgsm
 import os
 import random
 
-def tsne(X_list, cmap_name='tab10', filename=None):
+def tsne(X_list, model=None, cmap_name='tab10', filename=None):
     """
 
     :param X_list: list of numpy arrays containing representations for a given class
@@ -20,7 +21,10 @@ def tsne(X_list, cmap_name='tab10', filename=None):
     """
     # concatenate all representations to fit t-SNE
     X = np.concatenate(X_list, axis=0)
-    X_emb = TSNE(n_components=2).fit_transform(X)
+    if not model:
+        model = TSNE(n_components=2)
+
+    X_emb = model.fit_transform(X)
     cmap = plt.get_cmap(cmap_name)
     fig, ax = plt.subplots()
 
@@ -38,7 +42,8 @@ def tsne(X_list, cmap_name='tab10', filename=None):
 
     else:
         plt.savefig(filename)
-    # save plot
+
+    return model
 
 
 def test_tsne(dim=50):
@@ -105,6 +110,8 @@ if __name__ == "__main__":
     Z = []
     pred = []
     Y = []
+    Z_adv = []
+    pred_adv = []
 
     for X, y in test_loader:
         if args.gpu:
@@ -115,17 +122,33 @@ if __name__ == "__main__":
                 pred.append(logits.max(-1)[1].cpu().detach().numpy())
                 Y.append(y.cpu().detach().numpy())
 
+                X_adv, delta, out, out_adv = pgd(model=classifier, X=X, y=y, epsilon=args.epsilon,
+                                                 alpha=args.alpha, num_steps=args.num_steps, p='inf')
+
+                z, logits = classifier(X_adv, intermediate=True)
+                Z_adv.append(z.cpu().detach().numpy())
+                pred_adv.append(out_adv.cpu().detach().numpy())
+
     Z = np.concatenate(Z, axis=0)
     pred = np.concatenate(pred, axis=0)
     Y = np.concatenate(Y, axis=0)
 
     # make visualization for ground truth labels
     z_list, y_list = sort_by_label(Z, Y, num_classes=10)
-    tsne(z_list, filename="{}/label_tsne.png".format(workspace_dir))
+    tsne_model = tsne(z_list, filename="{}/label_tsne.png".format(workspace_dir))
 
     # make visualization for predicted labels
     z_list, pred_list = sort_by_label(Z, pred, num_classes=10)
-    tsne(z_list, filename="{}/pred_tsne.png".format(workspace_dir))
+    tsne(z_list, model=tsne_model, filename="{}/pred_tsne.png".format(workspace_dir))
+
+    # make visualization for adversarial inputs
+    # sort by ground truth
+    z_list, y_list = sort_by_label(Z_adv, Y, num_classes=10)
+    tsne(z_list, tsne_model, filename="{}/adv_gt_tsne.png".format(workspace_dir))
+
+    # sort by prediction
+    z_list, pred_list = sort_by_label(Z_adv, pred_adv, num_classes=10)
+    tsne(z_list, tsne_model, filename="{}/adv_pred_tsne.png".format(workspace_dir))
 
 
 
