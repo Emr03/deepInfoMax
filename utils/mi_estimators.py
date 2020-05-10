@@ -115,24 +115,32 @@ def dv_upper_lower_bound(t, device="cuda"):
     return -first_term + second_term
 
 
-def mine_lower_bound(f, buffer=None, momentum=0.9):
+def mine_lower_bound(t, buffer=None, momentum=0.9, device="cuda"):
     """
     MINE lower bound based on DV inequality.
     """
     if buffer is None:
         buffer = torch.tensor(1.0).cuda()
-    first_term = f.diag().mean()
 
-    buffer_update = logmeanexp_nodiag(f).exp()
+    #first_term = f.diag().mean()
+    N = t.shape[-1]
+    D = t.shape[0]
+    pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
+    first_term = (t * pos_mask).sum() / pos_mask.sum()
+
+    buffer_update = logmeanexp_nodiag(t).exp()
     with torch.no_grad():
-        second_term = logmeanexp_nodiag(f)
+        second_term = logmeanexp_nodiag(t)
         buffer_new = buffer * momentum + buffer_update * (1 - momentum)
         buffer_new = torch.clamp(buffer_new, min=1e-4)
         third_term_no_grad = buffer_update / buffer_new
 
+    # term used to compute gradient with running average for denominator
     third_term_grad = buffer_update / buffer_new
 
-    return first_term - second_term - third_term_grad + third_term_no_grad, buffer_update
+    # no gradients can be computed for second_term
+    # bias-corrected gradient estimate is computed via third_term_grad
+    return first_term - second_term - third_term_grad + third_term_no_grad, buffer_new
 
 
 def smile_lower_bound(f, clip=None):

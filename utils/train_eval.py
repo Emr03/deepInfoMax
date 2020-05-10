@@ -92,6 +92,27 @@ def train_dim(loader, model, enc_opt, T_opt, epoch, log, verbose, gpu, prior_mat
 
     return dim_losses.avg
 
+def eval_dim(loader, model, epoch, log, verbose, gpu):
+
+    mi = AverageMeter()
+
+    model.eval()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+        if gpu:
+            X, y = X.cuda(), y.cuda()
+
+        dim, E = model(X, estimator="dv")
+        mi.update(dim)
+        batch.set_description("Epoch {} MI {}".format(epoch, mi.avg))
+        if verbose and i % verbose == 0:
+            print('Epoch: [{0}]\t'
+                  'MI {mi.val:.4f} ({mi.avg:.4f})\t'.format(epoch, mi=mi), file=log)
+
+        log.flush()
+
+    return mi.avg
+
 def train_classifier(loader, model, opt,  epoch, log, verbose, gpu):
 
     batch_time = AverageMeter()

@@ -64,6 +64,8 @@ if __name__ == "__main__":
     e = 0
     while e < args.epochs:
         loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu, prior_matching, D_opt, gamma=args.gamma)
+        mi = train_eval.eval_dim(test_loader, DIM, e, test_log, args.verbose, args.gpu)
+
         e += 1
         torch.save({
             'encoder_state_dict': DIM.module.global_encoder.state_dict(),
@@ -74,5 +76,6 @@ if __name__ == "__main__":
             'T_opt': T_opt.state_dict(),
             'D_opt': D_opt.state_dict() if args.prior_matching else None,
             'loss': loss,
+            'mi': mi,
         }, workspace_dir + "/" + args.prefix + "_checkpoint.pth")
 

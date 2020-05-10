@@ -109,7 +109,7 @@ class LocalDIM(nn.Module):
         scores = torch.bmm(embedded_local, embedded_global.transpose(2, 1))
         return scores
 
-    def forward(self, X, return_scores=False, E=None):
+    def forward(self, X, return_scores=False, E=None, estimator=None):
         """
         :param X:
         :return:
@@ -132,7 +132,11 @@ class LocalDIM(nn.Module):
 
         #print(T.shape)
         # compute and return MI lower bound based on JSD, DV infoNCE or otherwise
-        mi = estimate_mutual_information(estimator=self.estimator, scores=T, baseline_fn=None, alpha_logit=None)
+        if not estimator:
+            estimator = self.estimator
+
+        mi = estimate_mutual_information(estimator=estimator, scores=T, baseline_fn=None, alpha_logit=None)
+
         if return_scores:
             return mi, Enc, T
 
