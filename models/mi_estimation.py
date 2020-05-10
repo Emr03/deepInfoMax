@@ -13,6 +13,8 @@ class LocalDIM(nn.Module):
         super(LocalDIM, self).__init__()
         self.global_encoder = global_encoder
         self.estimator = type
+        if type == "mine":
+            self.buffer = None
 
         # input_shape = num_channels of local encoder output
         self.input_shape = self.global_encoder.local_encoder.output_shape
@@ -135,7 +137,11 @@ class LocalDIM(nn.Module):
         if not estimator:
             estimator = self.estimator
 
-        mi = estimate_mutual_information(estimator=estimator, scores=T, baseline_fn=None, alpha_logit=None)
+        if estimator == "mine":
+            mi, buffer = estimate_mutual_information(estimator=estimator, scores=T, buffer=self.buffer)
+            self.buffer = buffer
+
+        mi = estimate_mutual_information(estimator=estimator, scores=T)
 
         if return_scores:
             return mi, Enc, T

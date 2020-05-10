@@ -7,6 +7,7 @@ from utils import data_loaders
 from utils import train_eval
 from models.encoders import *
 from models.ndm import *
+from models.mi_estimation import *
 import torch.optim as optim
 import random
 
@@ -23,6 +24,9 @@ if __name__ == "__main__":
     ndm_train_log = open("{}/ndm_train.log".format(workspace_dir), "w")
     ndm_eval_log = open("{}/ndm_test.log".format(workspace_dir), "w")
 
+    mine_train_log = open("{}/mine_train.log".format(workspace_dir), "w")
+    mine_eval_log = open("{}/mine_test.log".format(workspace_dir), "w")
+
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
 
@@ -35,23 +39,36 @@ if __name__ == "__main__":
     encoder.load_state_dict(torch.load(args.encoder_ckpt,
                                           map_location=args.device)["encoder_state_dict"])
 
+    # create Infomax module with loaded encoder, discriminator will be used to estimate mine
+    DIM = LocalDIM(encoder, type="mine")
+    DIM = DIM.to(args.device)
     ndm_disc = NeuralDependencyMeasure(encoder=encoder)
     ndm_disc = ndm_disc.to(args.device)
 
-    opt = optim.Adam(ndm_disc.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    ndm_opt = optim.Adam(ndm_disc.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    mine_opt = optim.Adam(DIM.T.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     e = 0
     while e < args.epochs:
-        loss = train_eval.ndm_train(model=ndm_disc, loader=train_loader, opt=opt, epoch=e, verbose=args.verbose,
+        train_eval.mine_train(model=DIM, loader=train_loader, opt=mine_opt, log=mine_train_log, epoch=e,
+                                   gpu=args.gpu, verbose=args.verbose)
+        train_eval.ndm_train(model=ndm_disc, loader=train_loader, opt=ndm_opt, epoch=e, verbose=args.verbose,
                                     log=ndm_train_log, gpu=args.gpu)
 
-        loss = train_eval.ndm_eval(model=ndm_disc, loader=test_loader, epoch=e, log=ndm_eval_log, gpu=args.gpu)
+        mi = train_eval.mine_eval(model=DIM, loader=test_loader, epoch=e, log=mine_eval_log, gpu=args.gpu)
+        ndm = train_eval.ndm_eval(model=ndm_disc, loader=test_loader, epoch=e, log=ndm_eval_log, gpu=args.gpu)
+
         e += 1
         torch.save({
             'ndm_state_dict': ndm_disc.state_dict(),
+            'mine_state_dict': DIM.T.state_dict(),
             'epoch': e,
-            'ndm_opt': opt.state_dict(),
-            'loss': loss,
-        }, workspace_dir + "/" + "ndm_checkpoint.pth")
+            'ndm_opt': ndm_opt.state_dict(),
+            'mine_opt': mine_opt.state_dict(),
+            'ndm': ndm,
+            'mi': mi
+        }, workspace_dir + "/" + "mine_ndm_checkpoint.pth")
+
+
 
 
 

@@ -159,7 +159,7 @@ def smile_lower_bound(f, clip=None):
     return js + dv_js
 
 def estimate_mutual_information(estimator, scores,
-                                baseline_fn=None, alpha_logit=None, **kwargs):
+                                baseline_fn=None, buffer=None, **kwargs):
     """Estimate variational lower bounds on mutual information.
   Args:
     estimator: string specifying estimator, one of:
@@ -189,4 +189,6 @@ def estimate_mutual_information(estimator, scores,
         mi = smile_lower_bound(scores, **kwargs)
     elif estimator == 'dv':
         mi = dv_upper_lower_bound(scores)
+    elif estimator == 'mine':
+        mi, buffer = mine_lower_bound(scores, buffer=buffer)
     return mi
