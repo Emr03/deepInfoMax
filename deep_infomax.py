@@ -60,6 +60,16 @@ if __name__ == "__main__":
     enc_opt = optim.Adam(DIM.module.global_encoder.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     T_opt = optim.Adam(DIM.module.T.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
+    if args.eval_only:
+        ckpt = torch.load(args.encoder_ckpt)
+        DIM.module.global_encoder.load_state_dict(ckpt['encoder_state_dict'])
+        DIM.module.T.load_state_dict(ckpt['discriminator_state_dict'])
+        e = ckpt["epoch"]
+        mi = train_eval.eval_dim(test_loader, DIM, e, test_log, args.verbose, args.gpu)
+        print('Epoch: [{0}]\t'
+                  'MI {mi}\t'.format(e, mi=mi), file=test_log)
+        test_log.flush()
+
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
