@@ -101,8 +101,10 @@ def eval_dim(loader, model, epoch, log, verbose, gpu):
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
-
-        dim, E = model(X, estimator="dv")
+        
+        with torch.no_grad():
+            dim, E = model(X, estimator="dv")
+        
         mi.update(dim)
         batch.set_description("Epoch {} MI {}".format(epoch, mi.avg))
         if verbose and i % verbose == 0:
