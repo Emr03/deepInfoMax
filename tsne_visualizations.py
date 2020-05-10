@@ -34,7 +34,7 @@ def tsne(X_list, model=None, cmap_name='tab10', filename=None):
         end = start + N
         color = cmap(i/len(X_list))
         print(color)
-        ax.scatter(X_emb[start:end, 0], X_emb[start:end, 1], color=color)
+        ax.scatter(X_emb[start:end, 0], X_emb[start:end, 1], color=color, alpha=0.5, marker="D", s=2)
         start = end
 
     if not filename:
@@ -95,13 +95,13 @@ if __name__ == "__main__":
     
     # create classifier
     if args.input_layer == "fc":
-        classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10, linear=args.linear)
 
     elif args.input_layer == "conv":
-        classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10, linear=args.linear)
 
     elif args.input_layer == "y":
-        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10, linear=args.linear)
 
     # load classifier from checkpoint
     classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"]) 
@@ -122,16 +122,18 @@ if __name__ == "__main__":
                 pred.append(logits.max(-1)[1].cpu().detach().numpy())
                 Y.append(y.cpu().detach().numpy())
 
-                X_adv, delta, out, out_adv = pgd(model=classifier, X=X, y=y, epsilon=args.epsilon,
-                                                 alpha=args.alpha, num_steps=args.num_steps, p='inf')
+            X_adv, delta, out, out_adv = pgd(model=classifier, X=X, y=y, epsilon=args.epsilon,
+                                            alpha=args.alpha, num_steps=args.num_steps, p='inf')
 
-                z, logits = classifier(X_adv, intermediate=True)
-                Z_adv.append(z.cpu().detach().numpy())
-                pred_adv.append(out_adv.cpu().detach().numpy())
+            z, logits = classifier(X_adv, intermediate=True)
+            Z_adv.append(z.cpu().detach().numpy())
+            pred_adv.append(out_adv.cpu().detach().numpy())
 
     Z = np.concatenate(Z, axis=0)
     pred = np.concatenate(pred, axis=0)
     Y = np.concatenate(Y, axis=0)
+    Z_adv = np.concatenate(Z_adv, axis=0)
+    pred_adv = np.concatenate(pred_adv, axis=0)
 
     # make visualization for ground truth labels
     z_list, y_list = sort_by_label(Z, Y, num_classes=10)

@@ -62,7 +62,7 @@ class ClassifierFC(nn.Module):
             freeze_weights(encoder)
             self.encoder.eval()
             
-    def forward(self, X, intermediate=True):
+    def forward(self, X, intermediate=False):
         Z = self.encoder(X, intermediate=True)
         if intermediate:
             return Z, self.model(Z)
