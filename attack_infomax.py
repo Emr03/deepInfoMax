@@ -8,17 +8,28 @@ from utils.argparser import argparser
 from utils import data_loaders
 from attacks.evaluation import evaluate_adversarial
 from attacks.gradient_untargeted import pgd, fgsm
+from attacks.mi_attacks import encoder_attack, source2target
 from utils.train_eval import AverageMeter
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 import random
 import numpy as np
 import json
 from tqdm import tqdm
+import seaborn as sns
 
+sns.set(style="ticks")
 
 def get_attack_stats(args, classifier, discriminator, loader, log):
 
     clean_errors = AverageMeter()
     adv_errors = AverageMeter()
+
+    mi_meter = AverageMeter()
+    mi_adv_adv_meter = AverageMeter()
+    mi_adv_clean_meter = AverageMeter()
+    mi_clean_adv_meter = AverageMeter()
 
     classifier.eval()
 
@@ -27,8 +38,6 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
 
         if args.gpu:
             X, y = X.cuda(), y.cuda()
-
-        Z_clean = classifier.encoder(X, intermediate=True)
 
         # adv samples using classifier
         if args.attack == "pgd":
@@ -59,10 +68,116 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
         batch.set_description("MI(X, E) {} MI(X_adv, E_adv) {} MI(X_adv, E) {} MI(X, E_adv) {}".format(mi, mi_adv_adv,
                                                                                                        mi_adv_clean,
                                                                                                        mi_clean_adv))
+
         # print to logfile
         print("Error Clean {} Error Adv{}, MI(X, E) {} MI(X_adv, E_adv) {} MI(X_adv, E) {} MI(X, E_adv) {}".format(
             clean_errors.avg, adv_errors.avg, mi, mi_adv_adv, mi_adv_clean, mi_clean_adv), file=log)
 
+        mi_meter.update(mi)
+        mi_adv_adv_meter.update(mi_adv_adv_meter)
+        mi_adv_clean_meter.update(mi_adv_clean_meter)
+        mi_clean_adv_meter.update(mi_clean_adv_meter)
+
+
+def attack_encoder(args, encoder, classifier, discriminator, loader, log):
+
+    clean_errors = AverageMeter()
+    adv_errors = AverageMeter()
+
+    mi_meter = AverageMeter()
+    mi_adv_adv_meter = AverageMeter()
+    mi_adv_clean_meter = AverageMeter()
+    mi_clean_adv_meter = AverageMeter()
+
+    classifier.eval()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+
+        if args.gpu:
+            X, y = X.cuda(), y.cuda()
+
+        X_adv, E_adv, diff, max_diff = encoder_attack(X, encoder, args.num_steps, args.epsilon, args.alpha,
+                                                    random_restart=True)
+
+        # evaluate MI for X and X_adv
+        mi, E, scores = discriminator(X=X, return_scores=True)
+
+        # evaluate the critic scores for X_adv and E_adv
+        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X=X_adv, return_scores=True)
+
+        # evaluate the critic scores for X_adv and E_clean
+        mi_adv_clean, _, scores_adv_clean = discriminator(X_adv, E=E, return_scores=True)
+
+        # evaluate the critic scores for X, E_adv
+        mi_clean_adv, _, scores_clean_adv = discriminator(X, E=E_adv, return_scores=True)
+
+        # run classifier on adversarial representations
+        logits_clean = classifier.model(E)
+        logits_adv = classifier.model(E_adv)
+        out = logits_clean.max(1)[1]
+        out_adv = logits_adv.max(1)[1]
+        err_clean = (out.data != y).float().sum() / X.size(0)
+        err_adv = (out_adv.data != y).float().sum() / X.size(0)
+
+        # batch.set_description("MI(X, E) {} MI(X_adv, E_adv) {} MI(X_adv, E) {} MI(X, E_adv) {}".format(mi, mi_adv_adv,
+        #                                                                                                mi_adv_clean,
+        #                                                                                                mi_clean_adv))
+
+        batch.set_description("Avg Diff {} Max Diff {}".format(diff, max_diff))
+        mi_meter.update(mi)
+        mi_adv_adv_meter.update(mi_adv_adv_meter)
+        mi_adv_clean_meter.update(mi_adv_clean_meter)
+        mi_clean_adv_meter.update(mi_clean_adv_meter)
+
+        clean_errors.update(err_clean)
+        adv_errors.update(err_adv)
+
+        # TODO decode
+        # print to logfile
+        print("Error Clean {}\t"
+              "Error Adv{} \t"
+              "MI(X, E) {} \t "
+              "MI(X_adv, E_adv) {}\t"
+              "MI(X_adv, E) {}\t"
+              "MI(X, E_adv) {}\t"
+              "Avg Diff {}\t"
+              "Max Diff {}\t".format(
+            clean_errors.avg, adv_errors.avg, mi, mi_adv_adv, mi_adv_clean, mi_clean_adv, diff, max_diff), file=log)
+
+
+def impostor_attack(args, encoder, classifier, discriminator, loader, log):
+
+    adv_diff_meter = AverageMeter()
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+
+        # using the given batch form X_s X_t pairs
+        X_s = X[0:loader.batch_size // 2]
+        X_t = X[loader.batch_size // 2:]
+
+        X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=args.epsilon, step_size=0.001)
+        adv_diff_meter.update(diff)
+        batch.set_description("Avg Diff {} Min Diff".format(diff))
+
+        # evaluate MI for X and X_adv
+        mi, E, scores = discriminator(X=X, return_scores=True)
+
+        # evaluate the critic scores for X_adv and E_adv
+        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X=X_adv, return_scores=True)
+
+        # evaluate the critic scores for X_adv and E_clean
+        mi_adv_clean, _, scores_adv_clean = discriminator(X_adv, E=E, return_scores=True)
+
+        # evaluate the critic scores for X, E_adv
+        mi_clean_adv, _, scores_clean_adv = discriminator(X, E=E_adv, return_scores=True)
+
+        print("MI(X, E) {} \t "
+              "MI(X_adv, E_adv) {}\t"
+              "MI(X_adv, E) {}\t"
+              "MI(X, E_adv) {}\t"
+              "Avg Diff {}\t"
+              "Min Diff {}\t".format(
+            mi, mi_adv_adv, mi_adv_clean, mi_clean_adv, diff, min_diff), file=log)
 
 if __name__ == "__main__":
 
@@ -74,7 +189,9 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.mkdir(workspace_dir)
 
-    attack_log = open("{}/attack.log".format(workspace_dir), "w")
+    class_attack_log = open("{}/class_attack.log".format(workspace_dir), "w")
+    encoder_attack_log = open("{}/class_attack.log".format(workspace_dir), "w")
+    impostor_attack_log = open("{}/impostor_attack.log".format(workspace_dir), "w")
 
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
@@ -107,5 +224,6 @@ if __name__ == "__main__":
     DIM.module.T.load_state_dict(torch.load(args.encoder_ckpt)["discriminator_state_dict"])
     classifier = classifier.to(args.device)
     discriminator = DIM.module
-    get_attack_stats(args, classifier, discriminator, test_loader, log=attack_log)
-
+    get_attack_stats(args, classifier, discriminator, test_loader, log=class_attack_log)
+    attack_encoder(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log)
+    impostor_attack(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log)

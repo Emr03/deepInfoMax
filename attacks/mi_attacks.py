@@ -8,6 +8,7 @@ compute adversarial example X such that MI(X, E) is lowered
 
         # 3. can adversarially construct X E pairs by modifying a randomly selected X s.t X + delta, E has a high score
 """
+
 from attacks.gradient_untargeted import pgd, fgsm
 from attacks.gradient_untargeted import get_projected_step
 import torch
@@ -33,36 +34,42 @@ def encoder_attack(X, encoder, num_steps, epsilon, alpha, random_restart=True):
     for n in range(num_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
         loss = torch.norm(encoder(X + delta) - Z, p=2, dim=-1)
-        loss.backward(retain_graph=True)
+        loss.avg().backward(retain_graph=True)
         grad = delta.grad.detach()
         # print("grad", grad)
         delta = get_projected_step(delta, grad, 2, epsilon, alpha)
 
     X_adv = X + delta
     E_adv = encoder(X_adv)
-    return X_adv, E_adv
+    return X_adv, E_adv, loss.avg(), loss.max()
+
 
 def critic_attack(E, critic, num_steps, random_restart=True):
 
-    # critic_attack: compute delta s.t score of critic for (Enc(X) + delta, X) is minimized
+    pass
+
+def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, random_restart=True):
+
+    _, Z_s = encoder(X_s)
+    _, Z_t = encoder(X_t)
+
     if random_restart:
-        delta = torch.randn_like(E, requires_grad=True)
+        delta = torch.randn_like(X_s, requires_grad=True)
 
     else:
-        delta = torch.zeros_like(E, requires_grad=True)
+        delta = torch.zeros_like(X_s, requires_grad=True)
 
-    for n in range(num_steps):
+    for n in range(max_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
-        loss = torch.norm(encoder(X + delta) - Z, p=2, dim=-1)
-        loss.backward(retain_graph=True)
+        Z_s = encoder(X_s + delta)
+        diff = torch.norm(Z_s - Z_t, p=2, dim=-1)
+        diff.avg().backward(retain_graph=True)
         grad = delta.grad.detach()
         # print("grad", grad)
-        delta = get_projected_step(delta, grad, 2, epsilon, alpha)
+        delta = get_projected_step(delta, grad, 2, epsilon, step_size)
 
-    E_adv = E + delta
-    return X_adv, E_adv
-
-
+    X_adv = X_s + delta
+    return X_adv, Z_s, diff.avg(), diff.min()
 
 
 
