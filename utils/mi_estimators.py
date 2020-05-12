@@ -120,7 +120,11 @@ def mine_lower_bound(t, buffer=None, momentum=0.9, device="cuda"):
     MINE lower bound based on DV inequality.
     """
     if buffer is None:
-        buffer = torch.tensor(1.0).cuda()
+        #buffer = torch.tensor(1.0).cuda()
+        mi = dv_upper_lower_bound(t)
+        with torch.no_grad():
+            new_buffer = logmeanexp_nodiag(t)
+        return mi, new_buffer
 
     #first_term = f.diag().mean()
     N = t.shape[-1]
@@ -128,20 +132,21 @@ def mine_lower_bound(t, buffer=None, momentum=0.9, device="cuda"):
     pos_mask = torch.eye(N, device=device).unsqueeze(0).repeat(D, 1, 1)
     first_term = (t * pos_mask).sum() / pos_mask.sum()
 
-    buffer_update = logmeanexp_nodiag(t).exp()
+    log_buffer_update = logmeanexp_nodiag(t)
+    #print(first_term, logmeanexp_nodiag(t))
     with torch.no_grad():
-        second_term = logmeanexp_nodiag(t)
-        buffer_new = buffer * momentum + buffer_update * (1 - momentum)
-        buffer_new = torch.clamp(buffer_new, min=1e-4)
-        third_term_no_grad = buffer_update / buffer_new
+        second_term = log_buffer_update
+        third_term_no_grad = 1. / (momentum * (buffer - log_buffer_update).exp() + (1 - momentum))
+        #buffer_new = torch.clamp(buffer_new, min=1e-4)
+        #third_term_no_grad = buffer_update / buffer_new
+        new_buffer = - torch.log(third_term_no_grad) - log_buffer_update
 
     # term used to compute gradient with running average for denominator
-    third_term_grad = buffer_update / buffer_new
-
+    third_term_grad = 1. / (momentum * (buffer - log_buffer_update).exp() + (1 - momentum))
     # no gradients can be computed for second_term
     # bias-corrected gradient estimate is computed via third_term_grad
-    return first_term - second_term - third_term_grad + third_term_no_grad, buffer_new
-
+    return -first_term + second_term + third_term_grad - third_term_no_grad, new_buffer 
+    #return -first_term + log_buffer_update, new_buffer
 
 def smile_lower_bound(f, clip=None):
     if clip is not None:
@@ -191,4 +196,5 @@ def estimate_mutual_information(estimator, scores,
         mi = dv_upper_lower_bound(scores)
     elif estimator == 'mine':
         mi, buffer = mine_lower_bound(scores, buffer=buffer)
+        return mi, buffer
     return mi

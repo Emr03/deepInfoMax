@@ -39,13 +39,13 @@ if __name__ == "__main__":
 
     # create classifier
     if args.input_layer == "fc":
-        classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, linear=args.linear, num_classes=10)
 
     elif args.input_layer == "conv":
-        classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, linear=args.linear, num_classes=10)
 
     elif args.input_layer == "y":
-        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, linear=args.linear, num_classes=10)
 
     # load classifier from checkpoint
     classifier.load_state_dict(torch.load(args.classifier_ckpt, map_location=torch.device("cpu"))["classifier_state_dict"])
@@ -54,5 +54,5 @@ if __name__ == "__main__":
     #     classifier = nn.DataParallel(classifier)
 
     classifier = classifier.to(args.device)
-    evaluate_adversarial(args, classifier, test_loader)
+    evaluate_adversarial(args, classifier, test_loader, test_log=test_log, epoch=999)
 

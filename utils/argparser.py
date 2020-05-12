@@ -20,15 +20,15 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     # DIM arguments, note that global_dim is also used to select the encoder used for classification
     # TODO: add architecture options
     parser.add_argument('--global_dim', action="store_true")
-    parser.add_argument('--encoder_stride', type=int, default=1)
-    parser.add_argument('--mi_estimator', type=str, default="JSD")
+    parser.add_argument('--encoder_stride', type=int, default=2)
+    parser.add_argument('--mi_estimator', type=str, default="js")
     parser.add_argument('--prior_matching', action="store_true")
     parser.add_argument('--decoder_ckpt', type=str, default=None)
     parser.add_argument('--gamma', type=float, default=0.1)
     
     # Classifier arguments
     parser.add_argument('--input_layer', default='fc')
-    parser.add_argument('--hidden_units', type=int, default=1024)
+    parser.add_argument('--hidden_units', type=int, default=200)
     parser.add_argument('--encoder_ckpt', type=str, default=None)
     parser.add_argument('--linear', action="store_true")
     parser.add_argument('--fully_supervised', action="store_true")
