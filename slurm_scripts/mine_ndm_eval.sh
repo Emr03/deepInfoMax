@@ -1,6 +1,6 @@
 #!/bin/bash
 # loop over encoder_ckpts
-for dir in experiments/encoders/prior/local_infomax_encoder_*; do
+for dir in experiments/encoders/prior/local_infomax_encoder_*_no_sigmoid; do
   echo ${dir}
   dir=${dir/experiments\/encoders\/prior\/}
   echo ${dir}

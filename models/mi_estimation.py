@@ -140,8 +140,9 @@ class LocalDIM(nn.Module):
         if estimator == "mine":
             mi, buffer = estimate_mutual_information(estimator=estimator, scores=T, buffer=self.buffer)
             self.buffer = buffer
-
-        mi = estimate_mutual_information(estimator=estimator, scores=T)
+        
+        else:
+            mi = estimate_mutual_information(estimator=estimator, scores=T)
 
         if return_scores:
             return mi, Enc, T

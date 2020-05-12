@@ -124,9 +124,9 @@ def mine_train(loader, model, opt, epoch, log, verbose, gpu):
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
-
-        mine, E = model(X, estimator="mine")
+        
         opt.zero_grad()
+        mine, E = model(X, estimator="mine")
         mine.backward()
         opt.step()
 
@@ -149,8 +149,9 @@ def mine_eval(loader, model, epoch, log, gpu):
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
-
-        mine, E = model(X, estimator="mine")
+        
+        with torch.no_grad():
+            mine, E = model(X, estimator="mine")
         mi.update(mine)
         batch.set_description("Epoch {} MI {}".format(epoch, mi.avg))
 
@@ -389,27 +390,27 @@ def ndm_train(loader, model, opt, epoch, log, verbose, gpu):
 
     model.train()
     ndm = AverageMeter()
-    mutual_info = AverageMeter()
+    loss = AverageMeter()
 
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
 
-        ndm_loss, mi = model(X)
-        ndm.update(ndm_loss)
-        mutual_info.update(mi)
+        ndm_loss, kl = model(X)
+        loss.update(ndm_loss)
+        ndm.update(kl)
         opt.zero_grad()
         ndm_loss.backward()
         opt.step()
 
-        batch.set_description("Epoch {} Loss {} MI {}".format(epoch, ndm.avg, mutual_info.avg))
+        batch.set_description("Epoch {} Loss {} NDM {}".format(epoch, loss.avg, ndm.avg))
         if verbose and i % verbose == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'MI {mutual_info.val:.4f} ({mutual_info.avg:.4f})\t'.format(
+                  'NDM {ndm.val:.4f} ({ndm.avg:.4f})\t'.format(
                 epoch, i, len(loader),
-                loss=ndm, mutual_info=mutual_info), file=log)
+                loss=loss, ndm=ndm), file=log)
 
         log.flush()
 
@@ -419,23 +420,23 @@ def ndm_eval(loader, model, epoch, log, gpu):
 
     model.eval()
     ndm = AverageMeter()
-    mutual_info = AverageMeter()
+    loss = AverageMeter()
 
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
         if gpu:
             X, y = X.cuda(), y.cuda()
 
-        ndm_loss, mi = model(X)
-        ndm.update(ndm_loss)
-        mutual_info.update(mi)
+        ndm_loss, kl = model(X)
+        loss.update(ndm_loss)
+        ndm.update(kl)
 
-        batch.set_description("Epoch {} Loss {} MI {}".format(epoch, ndm.avg, mutual_info.avg))
+        batch.set_description("Epoch {} Loss {} NDM {}".format(epoch, loss.avg, ndm.avg))
 
     print('Epoch: [{0}]\t'
           'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-          'MI {mutual_info.val:.4f} ({mutual_info.avg:.4f})\t'.format(
+          'NDM {ndm.val:.4f} ({ndm.avg:.4f})\t'.format(
            epoch, len(loader),
-          loss=ndm, mutual_info=mutual_info), file=log)
+          loss=loss, ndm=ndm), file=log)
 
     log.flush()
