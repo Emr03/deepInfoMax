@@ -265,7 +265,7 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
 
         C, E = encoder(X)
         R = decoder(E)
-        loss = nn.MSELoss()(input=R, target=X)
+        loss = torch.norm(R - X, p=2, dim=(-3, -2, -1)).mean()
 
         opt.zero_grad()
         loss.backward()

@@ -33,15 +33,16 @@ def encoder_attack(X, encoder, num_steps, epsilon, alpha, random_restart=True):
     Z = Z.detach()
     for n in range(num_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
-        loss = torch.norm(encoder(X + delta) - Z, p=2, dim=-1)
-        loss.avg().backward(retain_graph=True)
+        _, E = encoder(X + delta)
+        loss = torch.norm(E - Z, p=2, dim=-1)
+        loss.mean().backward(retain_graph=True)
         grad = delta.grad.detach()
         # print("grad", grad)
-        delta = get_projected_step(delta, grad, 2, epsilon, alpha)
+        delta = get_projected_step(delta, grad, "inf", epsilon, alpha)
 
     X_adv = X + delta
-    E_adv = encoder(X_adv)
-    return X_adv, E_adv, loss.avg(), loss.max()
+    _, E_adv = encoder(X_adv)
+    return X_adv, E_adv, loss.mean(), loss.max()
 
 
 def critic_attack(E, critic, num_steps, random_restart=True):
@@ -61,15 +62,15 @@ def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, random_r
 
     for n in range(max_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
-        Z_s = encoder(X_s + delta)
-        diff = torch.norm(Z_s - Z_t, p=2, dim=-1)
-        diff.avg().backward(retain_graph=True)
+        _,  Z_s = encoder(X_s + delta)
+        diff = -torch.norm(Z_s - Z_t, p=2, dim=-1)
+        diff.mean().backward(retain_graph=True)
         grad = delta.grad.detach()
         # print("grad", grad)
-        delta = get_projected_step(delta, grad, 2, epsilon, step_size)
+        delta = get_projected_step(delta, grad, "inf", epsilon, step_size)
 
     X_adv = X_s + delta
-    return X_adv, Z_s, diff.avg(), diff.min()
+    return X_adv, Z_s, -diff.mean(), -diff.max()
 
 
 

@@ -2,6 +2,14 @@ import torch
 import torch.nn as nn
 from models.encoders import *
 
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        m.weight.data.normal_(0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
+        m.bias.data.fill_(0)
+
 class DecoderY(nn.Module):
     """
     Decoder for reconstructing inputs
@@ -29,6 +37,9 @@ class DecoderY(nn.Module):
                                          nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1, bias=False),
                                          nn.Tanh()
                                          )
+
+        for param in self.tconv_model.parameters():
+            weights_init(param)
 
     def forward(self, x):
         z = self.pre_tconv(x)

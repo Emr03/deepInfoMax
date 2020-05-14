@@ -32,6 +32,7 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
     mi_clean_adv_meter = AverageMeter()
 
     classifier.eval()
+    discriminator.eval()
 
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
@@ -53,17 +54,19 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
         clean_errors.update(err_clean)
         adv_errors.update(err_adv)
 
-        # evaluate the critic scores for X and E
-        mi, E, scores = discriminator(X=X, return_scores=True)
+        with torch.no_grad():
+            # evaluate the critic scores for X and E
+            mi, E = discriminator(X=X)
 
-        # evaluate the critic scores for X_adv and E_adv
-        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X=X_adv, return_scores=True)
+            # evaluate the critic scores for X_adv and E_adv
+            mi_adv_adv, E_adv = discriminator(X=X_adv)
 
-        # evaluate the critic scores for X_adv and E_clean
-        mi_adv_clean, _, scores_adv_clean = discriminator(X_adv, E=E, return_scores=True)
+            # evaluate the critic scores for X_adv and E_clean
+            mi_adv_clean, _ = discriminator(X_adv, E=E)
 
-        # evaluate the critic scores for X, E_adv
-        mi_clean_adv, _, scores_clean_adv = discriminator(X, E=E_adv, return_scores=True)
+            # evaluate the critic scores for X, E_adv
+            mi_clean_adv, _ = discriminator(X, E=E_adv)
+
 
         batch.set_description("MI(X, E) {} MI(X_adv, E_adv) {} MI(X_adv, E) {} MI(X, E_adv) {}".format(mi, mi_adv_adv,
                                                                                                        mi_adv_clean,
@@ -74,9 +77,9 @@ def get_attack_stats(args, classifier, discriminator, loader, log):
             clean_errors.avg, adv_errors.avg, mi, mi_adv_adv, mi_adv_clean, mi_clean_adv), file=log)
 
         mi_meter.update(mi)
-        mi_adv_adv_meter.update(mi_adv_adv_meter)
-        mi_adv_clean_meter.update(mi_adv_clean_meter)
-        mi_clean_adv_meter.update(mi_clean_adv_meter)
+        mi_adv_adv_meter.update(mi_adv_adv)
+        mi_adv_clean_meter.update(mi_adv_clean)
+        mi_clean_adv_meter.update(mi_clean_adv)
 
 
 def attack_encoder(args, encoder, classifier, discriminator, loader, log):
@@ -98,22 +101,23 @@ def attack_encoder(args, encoder, classifier, discriminator, loader, log):
 
         X_adv, E_adv, diff, max_diff = encoder_attack(X, encoder, args.num_steps, args.epsilon, args.alpha,
                                                     random_restart=True)
+        
+        with torch.no_grad():
+            # evaluate MI for X and X_adv
+            mi, E = discriminator(X=X)
 
-        # evaluate MI for X and X_adv
-        mi, E, scores = discriminator(X=X, return_scores=True)
+            # evaluate the critic scores for X_adv and E_adv
+            mi_adv_adv, E_adv = discriminator(X=X_adv)
 
-        # evaluate the critic scores for X_adv and E_adv
-        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X=X_adv, return_scores=True)
+            # evaluate the critic scores for X_adv and E_clean
+            mi_adv_clean, _ = discriminator(X_adv, E=E)
 
-        # evaluate the critic scores for X_adv and E_clean
-        mi_adv_clean, _, scores_adv_clean = discriminator(X_adv, E=E, return_scores=True)
-
-        # evaluate the critic scores for X, E_adv
-        mi_clean_adv, _, scores_clean_adv = discriminator(X, E=E_adv, return_scores=True)
+            # evaluate the critic scores for X, E_adv
+            mi_clean_adv, _ = discriminator(X, E=E_adv)
 
         # run classifier on adversarial representations
-        logits_clean = classifier.model(E)
-        logits_adv = classifier.model(E_adv)
+        logits_clean = classifier(X)
+        logits_adv = classifier(X_adv)
         out = logits_clean.max(1)[1]
         out_adv = logits_adv.max(1)[1]
         err_clean = (out.data != y).float().sum() / X.size(0)
@@ -125,9 +129,9 @@ def attack_encoder(args, encoder, classifier, discriminator, loader, log):
 
         batch.set_description("Avg Diff {} Max Diff {}".format(diff, max_diff))
         mi_meter.update(mi)
-        mi_adv_adv_meter.update(mi_adv_adv_meter)
-        mi_adv_clean_meter.update(mi_adv_clean_meter)
-        mi_clean_adv_meter.update(mi_clean_adv_meter)
+        mi_adv_adv_meter.update(mi_adv_adv)
+        mi_adv_clean_meter.update(mi_adv_clean)
+        mi_clean_adv_meter.update(mi_clean_adv)
 
         clean_errors.update(err_clean)
         adv_errors.update(err_adv)
@@ -150,6 +154,9 @@ def impostor_attack(args, encoder, classifier, discriminator, loader, log):
     adv_diff_meter = AverageMeter()
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
+        
+        if args.gpu:
+            X, y = X.cuda(), y.cuda()
 
         # using the given batch form X_s X_t pairs
         X_s = X[0:loader.batch_size // 2]
@@ -157,19 +164,20 @@ def impostor_attack(args, encoder, classifier, discriminator, loader, log):
 
         X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=args.epsilon, step_size=0.001)
         adv_diff_meter.update(diff)
-        batch.set_description("Avg Diff {} Min Diff".format(diff))
+        batch.set_description("Avg Diff {} Min Diff {}".format(diff, min_diff))
 
-        # evaluate MI for X and X_adv
-        mi, E, scores = discriminator(X=X, return_scores=True)
+        with torch.no_grad():
+            # evaluate MI for X and X_adv
+            mi, E = discriminator(X=X_s)
 
-        # evaluate the critic scores for X_adv and E_adv
-        mi_adv_adv, E_adv, scores_adv_adv = discriminator(X=X_adv, return_scores=True)
+            # evaluate the critic scores for X_adv and E_adv
+            mi_adv_adv, E_adv = discriminator(X=X_adv)
 
-        # evaluate the critic scores for X_adv and E_clean
-        mi_adv_clean, _, scores_adv_clean = discriminator(X_adv, E=E, return_scores=True)
+            # evaluate the critic scores for X_adv and E_clean
+            mi_adv_clean, _ = discriminator(X_adv, E=E)
 
-        # evaluate the critic scores for X, E_adv
-        mi_clean_adv, _, scores_clean_adv = discriminator(X, E=E_adv, return_scores=True)
+            # evaluate the critic scores for X, E_adv
+            mi_clean_adv, _ = discriminator(X_s, E=E_adv)
 
         print("MI(X, E) {} \t "
               "MI(X_adv, E_adv) {}\t"
@@ -178,6 +186,7 @@ def impostor_attack(args, encoder, classifier, discriminator, loader, log):
               "Avg Diff {}\t"
               "Min Diff {}\t".format(
             mi, mi_adv_adv, mi_adv_clean, mi_clean_adv, diff, min_diff), file=log)
+              
 
 if __name__ == "__main__":
 
@@ -224,6 +233,6 @@ if __name__ == "__main__":
     DIM.module.T.load_state_dict(torch.load(args.encoder_ckpt)["discriminator_state_dict"])
     classifier = classifier.to(args.device)
     discriminator = DIM.module
-    get_attack_stats(args, classifier, discriminator, test_loader, log=class_attack_log)
-    attack_encoder(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log)
+    #get_attack_stats(args, classifier, discriminator, test_loader, log=class_attack_log)
+    #attack_encoder(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log)
     impostor_attack(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log)

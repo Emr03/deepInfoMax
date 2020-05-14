@@ -1,5 +1,5 @@
 #!/bin/bash
-mode=fc
+mode=y
 stride=2
 
 for dir in experiments/infomax_classifiers/classifier_${mode}_*; do

@@ -13,9 +13,13 @@ from torch.autograd import Variable
 def get_projected_step(delta, g, p, epsilon, alpha):
 
     if p == 2:
-        print(g.shape, delta.shape)
-        v = alpha * g / torch.norm(g, p='fro', dim=(-1, -2), keepdim=True).repeat(1, 1, g.shape[-2], g.shape[-1])
-        delta = epsilon * (delta + v) / torch.norm(g, p='fro', dim=(-1, -2), keepdim=True).repeat(1, 1, g.shape[-2], g.shape[-1])
+        #print(g.shape, delta.shape)
+        v = alpha * g / torch.norm(g, p=2, dim=(-1, -2, -3), keepdim=True).repeat(1, g.shape[-3], g.shape[-2], g.shape[-1])
+        delta_norm = torch.norm(delta + v, p=2, dim=(-1, -2, -3), keepdim=True).repeat(1, g.shape[-3], g.shape[-2], g.shape[-1])
+        # set delta norm to 1 / eps if norm > eps otherwise set to 1
+        mask = (delta_norm.data > epsilon).float()
+        delta_norm = (delta_norm * mask) / epsilon + delta_norm * (1 - mask) / delta_norm
+        delta = (delta + v) / delta_norm 
 
     elif p == 'inf':
         v = torch.sign(g) * alpha
