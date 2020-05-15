@@ -63,10 +63,10 @@ class ClassifierFC(nn.Module):
             self.encoder.eval()
             
     def forward(self, X, intermediate=False):
-        Z = self.encoder(X, intermediate=True)
+        C, FC, E = self.encoder(X)
         if intermediate:
-            return Z, self.model(Z)
-        return self.model(Z)
+            return C, FC, self.model(FC)
+        return self.model(FC)
 
     def train(self):
         self.model.train()
@@ -96,9 +96,9 @@ class ClassifierY(nn.Module):
             self.encoder.eval()
 
     def forward(self, X, intermediate=False):
-        C, E = self.encoder(X)
+        C, FC, E = self.encoder(X)
         if intermediate:
-            return E, self.model(E)
+            return C, FC, self.model(E)
         return self.model(E)
 
     def train(self):

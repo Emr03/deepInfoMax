@@ -95,15 +95,13 @@ class GlobalEncoder(nn.Module):
                                     nn.ReLU(),
                                     nn.Linear(1024, self.output_size))
 
-    def forward(self, input, intermediate=False):
+    def forward(self, input):
+        # C: second to last conv layer, output: last conv layer
         C, output = self.local_encoder(input)
-        # print("C shape" , C.shape)
         enc_input = torch.nn.Flatten()(output)
-        if intermediate:
-            return self.fc_net._modules["0"](enc_input)
-
+        FC = self.fc_net._modules["0"](enc_input)
         E = self.fc_net(enc_input)
-        return C, E.squeeze()
+        return C, FC, E.squeeze()
 
 netD = GlobalEncoder(stride=2)
 netD.apply(weights_init)
