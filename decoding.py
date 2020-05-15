@@ -43,15 +43,21 @@ if __name__ == "__main__":
     decoder = DecoderY(input_size=encoder.output_size)
     decoder = decoder.to(args.device)
     opt = optim.Adam(decoder.parameters(), lr=args.lr)
-    
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[100, 300, 500, 700, 900], gamma=0.5)
-    # if num of visible devices > 1, use DataParallel wrapper
     e = 0
+
+    if args.decoder_ckpt:
+        ckpt = torch.load(args.decoder_ckpt)
+        decoder.load_state_dict(ckpt["decoder_state_dict"])
+        opt.load_state_dict(ckpt["opt"])
+        e = ckpt["epoch"]
+
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=opt, milestones=[100, 300, 500, 700, 900], gamma=0.5)
+    # if num of visible devices > 1, use DataParallel wrapper
     while e < args.epochs:
         loss = train_eval.train_decoder(train_loader, encoder, decoder, opt, e,
                                            train_log, verbose=args.verbose, gpu=args.gpu)
         e += 1
-        scheduler.step()
+        #scheduler.step()
 
         #train_eval.eval_decoder(test_loader, decoder, e, test_log, verbose=args.verbose, gpu=args.gpu)
         torch.save({

@@ -188,6 +188,22 @@ def impostor_attack(args, encoder, classifier, discriminator, loader, log):
             mi, mi_adv_adv, mi_adv_clean, mi_clean_adv, diff, min_diff), file=log)
               
 
+def random_attack(args, encoder, classifier, discriminator, loader, log):
+
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+
+        if args.gpu:
+            X, y = X.cuda(), y.cuda()
+
+        delta = torch.rand_like(X).sign() * args.epsilon
+        _, E = encoder(X)
+        _, E_d = encoder(X + delta)
+        norm = torch.norm(E - E_d, p=2, dim=-1)
+        batch.set_description("Avg Diff {} Max Diff {} ".format(norm.mean(), norm.max()))
+        print("Avg Diff {}\t Max Diff {} ".format(norm.mean(), norm.max()), file=log)
+
+
 if __name__ == "__main__":
 
     args = argparser()
@@ -201,6 +217,7 @@ if __name__ == "__main__":
     class_attack_log = open("{}/class_attack.log".format(workspace_dir), "w")
     encoder_attack_log = open("{}/class_attack.log".format(workspace_dir), "w")
     impostor_attack_log = open("{}/impostor_attack.log".format(workspace_dir), "w")
+    random_attack_log = open("{}/random_attack.log".format(workspace_dir), "w")
 
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
@@ -234,5 +251,6 @@ if __name__ == "__main__":
     classifier = classifier.to(args.device)
     discriminator = DIM.module
     #get_attack_stats(args, classifier, discriminator, test_loader, log=class_attack_log)
-    #attack_encoder(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log)
+    attack_encoder(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log)
+    random_attack(args, encoder, classifier, discriminator, test_loader, log=random_attack_log)
     impostor_attack(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log)
