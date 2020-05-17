@@ -46,6 +46,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     # transfer attack arguments
     parser.add_argument('--source_model_ckpt', type=str, default=None)
     parser.add_argument('--target_model_ckpt', type=str, default=None)
+    parser.add_argument('--log', type=str, default="transfer_stats.log")
 
     # other arguments
     parser.add_argument('--prefix')
