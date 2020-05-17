@@ -119,11 +119,11 @@ class LocalDIM(nn.Module):
 
         if E is not None:
             Enc = E
-            C, _ = self.global_encoder(X)
+            C, _, _ = self.global_encoder(X)
 
         else:
             # pass X through global encoder and obtain feature map C and global representation E
-            C, Enc = self.global_encoder(X)
+            C, _, Enc = self.global_encoder(X)
 
         if self.concat:
             T = self.forward_concat(E=Enc, C=C)
@@ -168,7 +168,7 @@ class GlobalDIM(nn.Module):
         :return:
         """
         # pass X through global encoder and obtain feature map C and global representation E
-        C, output = self.global_encoder.local_encoder(X)
+        C, FC, output = self.global_encoder.local_encoder(X)
         # flatten output and concatenate with E
         output = F.flatten(output)
         E = self.global_encoder.fc_net(output)

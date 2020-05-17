@@ -29,11 +29,11 @@ def encoder_attack(X, encoder, num_steps, epsilon, alpha, random_restart=True):
         delta = torch.zeros_like(X, requires_grad=True)
 
     # print("grad", delta.requires_grad)
-    _, Z = encoder(X)
+    _, _, Z = encoder(X)
     Z = Z.detach()
     for n in range(num_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
-        _, E = encoder(X + delta)
+        _, _, E = encoder(X + delta)
         loss = torch.norm(E - Z, p=2, dim=-1)
         loss.mean().backward(retain_graph=True)
         grad = delta.grad.detach()
@@ -41,7 +41,7 @@ def encoder_attack(X, encoder, num_steps, epsilon, alpha, random_restart=True):
         delta = get_projected_step(delta, grad, "inf", epsilon, alpha)
 
     X_adv = X + delta
-    _, E_adv = encoder(X_adv)
+    _, _, E_adv = encoder(X_adv)
     return X_adv, E_adv, loss.mean(), loss.max()
 
 
@@ -51,8 +51,8 @@ def critic_attack(E, critic, num_steps, random_restart=True):
 
 def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, random_restart=True):
 
-    _, Z_s = encoder(X_s)
-    _, Z_t = encoder(X_t)
+    _, _, Z_s = encoder(X_s)
+    _, _, Z_t = encoder(X_t)
 
     if random_restart:
         delta = torch.randn_like(X_s, requires_grad=True)
@@ -62,7 +62,7 @@ def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, random_r
 
     for n in range(max_steps):
         # x = torch.autograd.Variable(X.data, requires_grad=True)
-        _,  Z_s = encoder(X_s + delta)
+        _, _, Z_s = encoder(X_s + delta)
         diff = -torch.norm(Z_s - Z_t, p=2, dim=-1)
         diff.mean().backward(retain_graph=True)
         grad = delta.grad.detach()

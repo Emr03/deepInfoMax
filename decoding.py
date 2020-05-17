@@ -24,8 +24,8 @@ if __name__ == "__main__":
     # save arguments as json file
     # json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
 
-    train_log = open("{}/train.log".format(workspace_dir), "w")
-    test_log = open("{}/test.log".format(workspace_dir), "w")
+    train_log = open("{}/train.log".format(workspace_dir), "a")
+    test_log = open("{}/test.log".format(workspace_dir), "a")
 
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)

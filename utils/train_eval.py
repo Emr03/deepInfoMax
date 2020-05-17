@@ -263,10 +263,10 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
             X, y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)
 
-        C, E = encoder(X)
+        C, FC, E = encoder(X)
         R = decoder(E)
         loss = torch.norm(R - X, p=2, dim=(-3, -2, -1)).pow(2).mean()
-
+        #loss = torch.nn.functional.mse_loss(input=R, target=X)
         opt.zero_grad()
         loss.backward()
         opt.step()
@@ -303,7 +303,7 @@ def eval_decoder(loader, encoder, decoder, log, verbose, gpu):
             X, y = X.cuda(), y.cuda()
         data_time.update(time.time() - end)
 
-        C, E = encoder(X)
+        C, FC, E = encoder(X)
         if len(E.shape) == 1:
             E = E.unsqueeze(0)
         R = decoder(E)

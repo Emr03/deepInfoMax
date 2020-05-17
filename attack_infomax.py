@@ -70,27 +70,31 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
             out_adv = logits_adv.max(1)[1]
 
         elif type == "impostor":
+            batch_size = X.shape[0]
             # using the given batch form X_s X_t pairs
-            X_s = X[0:loader.batch_size // 2]
-            X_t = X[loader.batch_size // 2:]
+            X_s = X[0:batch_size // 2]
+            X_t = X[batch_size // 2:]
+            # set y to the labels for X_s and X to X_s for later computation and logging 
+            y = y[0:batch_size // 2]
+            X = X_s
 
             X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=args.epsilon,
-                                                         step_size=0.001)
+                                                         max_steps=1000, step_size=0.01)
 
             # run classifier on adversarial representations
-            logits_clean = classifier(X)
+            logits_clean = classifier(X_s)
             logits_adv = classifier(X_adv)
             out = logits_clean.max(1)[1]
             out_adv = logits_adv.max(1)[1]
 
             batch.set_description("Avg Diff {} Min Diff {}".format(diff, min_diff))
-
+            
         elif type == "random":
 
             delta = torch.rand_like(X).sign() * args.epsilon
             X_adv = X + delta
-            _, E = encoder(X)
-            _, E_d = encoder(X_adv)
+            _, _, E = encoder(X)
+            _, _, E_d = encoder(X_adv)
             norm = torch.norm(E - E_d, p=2, dim=-1)
 
             # run classifier on adversarial representations
@@ -108,16 +112,16 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
         adv_errors.update(err_adv)
 
         # UPDATE L2 NORM METERS
-        C_clean, FC_clean, Z_clean = encoder(X, intermediate=True)
-        C_adv, FC_adv, Z_adv = encoder(X_adv, intermediate=True)
+        C_clean, FC_clean, Z_clean = encoder(X)
+        C_adv, FC_adv, Z_adv = encoder(X_adv)
 
         l2 = torch.norm(Z_clean - Z_adv, p=2, dim=-1, keepdim=True)
         fraction = (l2 / torch.norm(Z_clean, p=2, dim=-1, keepdim=True))
         z_l2_norms.update(l2.mean())
         z_l2_frac.update(fraction.mean())
 
-        l2 = torch.norm(C_clean - C_adv, p=2, dim=-1, keepdim=True)
-        fraction = (l2 / torch.norm(C_clean, p=2, dim=-1, keepdim=True))
+        l2 = torch.norm(C_clean - C_adv, p=2, dim=(-1, -2, -3), keepdim=True)
+        fraction = (l2 / torch.norm(C_clean, p=2, dim=(-1, -2, -3), keepdim=True))
         c_l2_norms.update(l2.mean())
         c_l2_frac.update(fraction.mean())
 
@@ -150,17 +154,17 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
                                                                                                        mi_clean_adv))
 
         # print to logfile
-        print("Error Clean {}\t Error Adv{}\t "
-              "C L2 {}\t C L2 Frac{}\t"
-              "FC L2 {}\t FC L2 Frac{}\t"
-              "Z L2 {}\t Z L2 Frac{}\t"
-              "MI(X, E) {}\t MI(X_adv, E_adv) {}\t "
-              "MI(X_adv, E) {}\t MI(X, E_adv) {}\t".format(
-              clean_errors.avg, adv_errors.avg,
-              c_l2_norms.avg, c_l2_frac.avg,
-              fc_l2_norms.avg, fc_l2_frac.avg,
-              z_l2_norms.avg, z_l2_frac.avg,
-              mi, mi_adv_adv, mi_adv_clean, mi_clean_adv), file=log)
+        print("Error Clean {clean_errors.avg:.3f}\t Error Adv{adv_errors.avg:.3f}\t "
+                "C L2 {c_l2_norms.avg:.3f}\t C L2 Frac{c_l2_frac.avg:.3f}\t"
+                "FC L2 {fc_l2_norms.avg:.3f}\t FC L2 Frac{fc_l2_frac.avg:.3f}\t"
+                "Z L2 {z_l2_norms.avg:.3f}\t Z L2 Frac{z_l2_frac.avg:.3f}\t"
+                "MI(X, E) {mi.avg:.3f}\t MI(X_adv, E_adv) {mi_adv_adv.avg:.3f}\t "
+                "MI(X_adv, E) {mi_adv_clean.avg:.3f}\t MI(X, E_adv) {mi_clean_adv.avg:.3f}\t".format(
+              clean_errors=clean_errors, adv_errors=adv_errors,
+              c_l2_norms=c_l2_norms, c_l2_frac=c_l2_frac,
+              fc_l2_norms=fc_l2_norms, fc_l2_frac=fc_l2_frac,
+              z_l2_norms=z_l2_norms, z_l2_frac=z_l2_frac,
+              mi=mi_meter, mi_adv_adv=mi_adv_adv_meter, mi_adv_clean=mi_adv_clean_meter, mi_clean_adv=mi_clean_adv_meter), file=log)
 
 
 if __name__ == "__main__":
@@ -211,5 +215,5 @@ if __name__ == "__main__":
     discriminator = DIM.module
     get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=class_attack_log, type="class")
     get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log, type="encoder")
-    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=random_attack_log, type="impostor")
-    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log, type="random")
+    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log, type="impostor")
+    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=random_attack_log, type="random")
