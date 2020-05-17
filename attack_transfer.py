@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import os
 from attacks.gradient_untargeted import pgd, fgsm
+from attacks.mi_attacks import *
 from utils.argparser import argparser
 from utils import data_loaders
 from models.classifier import *
@@ -12,7 +13,36 @@ import numpy as np
 import time
 from utils.train_eval import AverageMeter
 
-def get_transfer_stats(args, source_model, target_model, loader, log):
+
+def get_encoder_transfer_stats(args, source_model, target_model, loader, log):
+
+    source_z_l2_norms = AverageMeter()
+    target_z_l2_norms = AverageMeter()
+
+    source_model.eval()
+    target_model.eval()
+
+    batch = tqdm(loader, total=len(loader) // loader.batch_size)
+    for i, (X, y) in enumerate(batch):
+
+        if args.gpu:
+            X, y = X.cuda(), y.cuda()
+
+        _, _, E = source_model(X)
+        source_x_adv, source_e_adv, source_diff, source_max_diff = encoder_attack(X, source_model, args.num_steps, args.epsilon, args.alpha,
+                                                                                  random_restart=True)
+
+        source_z_l2_norms.update(source_diff)
+        _, _, E_adv = target_model(source_x_adv)
+        _, _, E = target_model(X)
+        l2 = torch.norm(E - E_adv, dim=-1, p=2).mean()
+        target_z_l2_norms.update(l2)
+
+        print("Src L2 {src_l2:3f}\t"
+              "Tgt L2 {tgt_l2:3f}\t", file=log)
+
+
+def get_classifier_transfer_stats(args, source_model, target_model, loader, log):
 
     source_clean_errors = AverageMeter()
     source_adv_errors = AverageMeter()
@@ -117,7 +147,7 @@ def get_transfer_stats(args, source_model, target_model, loader, log):
                   fraction_transfer=fraction_transfer_meter,
                   fraction_transfer_same=fraction_transfer_same_meter), file=log)
 
-def load_model(model_ckpt, args):
+def load_classifier(model_ckpt, args):
     encoder = GlobalEncoder(stride=args.encoder_stride)
 
     # create classifiers
@@ -136,6 +166,13 @@ def load_model(model_ckpt, args):
     classifier = classifier.to(args.device)
     return classifier
 
+
+def load_encoder(model_ckpt, args):
+    encoder = GlobalEncoder(stride=args.encoder_stride)
+    encoder.load_state_dict(torch.load(model_ckpt,
+                                       map_location=args.device)["encoder_state_dict"])
+    return encoder
+
 if __name__ == "__main__":
 
     args = argparser()
@@ -146,7 +183,7 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir, exist_ok=True)
 
-    stats_log = open("{}/transfer_stats.log".format(workspace_dir), "w")
+    stats_log = open("{}/{}".format(workspace_dir, args.log), "w")
     # write source and target models in transfer stats log
     print("Source Model: {}\t Target Model: {}\t".format(args.source_model_ckpt, args.target_model.ckpt))
 
@@ -157,7 +194,9 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    source_model = load_model(args.source_model_ckpt, args)
-    target_model = load_model(args.target_model_ckpt, args)
+    # TODO add option for classifiers
+    source_model = load_encoder(args.source_model_ckpt, args)
+    target_model = load_encoder(args.target_model_ckpt, args)
 
-    get_transfer_stats(args, source_model, target_model, test_loader, log=stats_log)
+    get_encoder_transfer_stats(args, source_model, target_model, test_loader, log=stats_log)
+
