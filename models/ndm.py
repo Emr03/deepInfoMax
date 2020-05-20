@@ -38,7 +38,7 @@ class NeuralDependencyMeasure(nn.Module):
     def forward(self, X):
 
         with torch.no_grad():
-            C, E = self.encoder(X)
+            C, _, E = self.encoder(X)
         
         E = nn.Sigmoid()(E)
         # shuffle encoder units to break correlations between units

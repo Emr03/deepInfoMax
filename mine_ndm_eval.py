@@ -21,11 +21,11 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir, exist_ok=True)
 
-    ndm_train_log = open("{}/ndm_train.log".format(workspace_dir), "w")
-    ndm_eval_log = open("{}/ndm_test.log".format(workspace_dir), "w")
+    ndm_train_log = open("{}/ndm_train.log".format(workspace_dir), "a")
+    ndm_eval_log = open("{}/ndm_test.log".format(workspace_dir), "a")
 
-    mine_train_log = open("{}/mine_train.log".format(workspace_dir), "w")
-    mine_eval_log = open("{}/mine_test.log".format(workspace_dir), "w")
+    mine_train_log = open("{}/mine_train.log".format(workspace_dir), "a")
+    mine_eval_log = open("{}/mine_test.log".format(workspace_dir), "a")
 
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
@@ -48,6 +48,15 @@ if __name__ == "__main__":
     ndm_opt = optim.Adam(ndm_disc.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     mine_opt = optim.Adam(DIM.T.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     e = 0
+   
+    if args.mine_ckpt:
+        ckpt = torch.load(args.mine_ckpt)
+        DIM.T.load_state_dict(ckpt["mine_state_dict"])
+        mine_opt.load_state_dict(ckpt["mine_opt"])
+        e = ckpt["epoch"]
+        ndm_disc.load_state_dict(ckpt["ndm_state_dict"])
+        ndm_opt.load_state_dict(ckpt["ndm_opt"])
+
     while e < args.epochs:
         train_eval.mine_train(model=DIM, loader=train_loader, opt=mine_opt, log=mine_train_log, epoch=e,
                                    gpu=args.gpu, verbose=args.verbose)

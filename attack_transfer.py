@@ -39,7 +39,7 @@ def get_encoder_transfer_stats(args, source_model, target_model, loader, log):
         target_z_l2_norms.update(l2)
 
         print("Src L2 {src_l2:3f}\t"
-              "Tgt L2 {tgt_l2:3f}\t", file=log)
+              "Tgt L2 {tgt_l2:3f}\t".format(src_l2=source_z_l2_norms.avg, tgt_l2=target_z_l2_norms.avg), file=log)
 
 
 def get_classifier_transfer_stats(args, source_model, target_model, loader, log):
@@ -171,6 +171,7 @@ def load_encoder(model_ckpt, args):
     encoder = GlobalEncoder(stride=args.encoder_stride)
     encoder.load_state_dict(torch.load(model_ckpt,
                                        map_location=args.device)["encoder_state_dict"])
+    encoder = encoder.to(args.device)
     return encoder
 
 if __name__ == "__main__":
@@ -185,7 +186,7 @@ if __name__ == "__main__":
 
     stats_log = open("{}/{}".format(workspace_dir, args.log), "w")
     # write source and target models in transfer stats log
-    print("Source Model: {}\t Target Model: {}\t".format(args.source_model_ckpt, args.target_model.ckpt))
+    print("Source Model: {}\t Target Model: {}\t".format(args.source_model_ckpt, args.target_model_ckpt))
 
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
 
