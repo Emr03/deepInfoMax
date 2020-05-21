@@ -69,8 +69,8 @@ def get_attack_stats(args, encoder, classifier, loader, log, type="class"):
             y = y[0:batch_size // 2]
             X = X_s
 
-            X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=args.epsilon,
-                                                         max_steps=1000, step_size=0.01)
+            X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=2.0,
+                                                         max_steps=70000, step_size=0.001)
 
             # run classifier on adversarial representations
             logits_clean = classifier(X_s)
@@ -132,6 +132,8 @@ def get_attack_stats(args, encoder, classifier, loader, log, type="class"):
             z_l2_norms=z_l2_norms, z_l2_frac=z_l2_frac),
             file=log)
 
+        log.flush()
+
 
 if __name__ == "__main__":
 
@@ -171,9 +173,9 @@ if __name__ == "__main__":
     # load classifier from checkpoint
     classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"])
     classifier = classifier.to(args.device)
-    get_attack_stats(args, encoder, classifier, test_loader, log=class_attack_log, type="class")
-    get_attack_stats(args, encoder, classifier, test_loader, log=encoder_attack_log, type="encoder")
-    get_attack_stats(args, encoder, classifier, test_loader, log=impostor_attack_log, type="impostor")
-    get_attack_stats(args, encoder, classifier, test_loader, log=random_attack_log, type="random")
+    get_attack_stats(args, classifier.encoder, classifier, test_loader, log=class_attack_log, type="class")
+    get_attack_stats(args, classifier.encoder, classifier, test_loader, log=encoder_attack_log, type="encoder")
+    get_attack_stats(args, classifier.encoder, classifier, test_loader, log=impostor_attack_log, type="impostor")
+    get_attack_stats(args, classifier.encoder, classifier, test_loader, log=random_attack_log, type="random")
 
 

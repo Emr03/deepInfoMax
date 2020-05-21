@@ -79,7 +79,7 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
             X = X_s
 
             X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=args.epsilon,
-                                                         max_steps=50000, step_size=0.001, random_restart=False)
+                                                         max_steps=500, step_size=0.001, random_restart=False)
 
             # run classifier on adversarial representations
             logits_clean = classifier(X_s)
@@ -164,7 +164,11 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
               c_l2_norms=c_l2_norms, c_l2_frac=c_l2_frac,
               fc_l2_norms=fc_l2_norms, fc_l2_frac=fc_l2_frac,
               z_l2_norms=z_l2_norms, z_l2_frac=z_l2_frac,
-              mi=mi_meter, mi_adv_adv=mi_adv_adv_meter, mi_adv_clean=mi_adv_clean_meter, mi_clean_adv=mi_clean_adv_meter), file=log)
+              mi=mi_meter, mi_adv_adv=mi_adv_adv_meter, mi_adv_clean=mi_adv_clean_meter, mi_clean_adv=mi_clean_adv_meter), \
+                      file=log)
+
+        log.flush()
+
 
 
 if __name__ == "__main__":
@@ -177,10 +181,10 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.mkdir(workspace_dir)
 
-    #class_attack_log = open("{}/class_attack.log".format(workspace_dir), "w")
-    #encoder_attack_log = open("{}/encoder_attack.log".format(workspace_dir), "w")
+    class_attack_log = open("{}/class_attack.log".format(workspace_dir), "w")
+    encoder_attack_log = open("{}/encoder_attack.log".format(workspace_dir), "w")
     impostor_attack_log = open("{}/impostor_attack.log".format(workspace_dir), "w")
-    #random_attack_log = open("{}/random_attack.log".format(workspace_dir), "w")
+    random_attack_log = open("{}/random_attack.log".format(workspace_dir), "w")
 
     train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
     _, test_loader = data_loaders.cifar_loaders(args.batch_size)
@@ -213,7 +217,7 @@ if __name__ == "__main__":
     DIM.module.T.load_state_dict(torch.load(args.encoder_ckpt)["discriminator_state_dict"])
     classifier = classifier.to(args.device)
     discriminator = DIM.module
-    #get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=class_attack_log, type="class")
-    #get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log, type="encoder")
+    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=class_attack_log, type="class")
+    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log, type="encoder")
     get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log, type="impostor")
-    #get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=random_attack_log, type="random")
+    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=random_attack_log, type="random")

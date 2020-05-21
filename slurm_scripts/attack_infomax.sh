@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mode=fc
+mode=y
 stride=2
 for mi_estimator in js dv nce; do
  dir=experiments/infomax_classifiers/classifier_${mode}_local_infomax_encoder_${mi_estimator}_no_sigmoid
