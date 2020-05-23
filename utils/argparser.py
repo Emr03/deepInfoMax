@@ -8,6 +8,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     parser = argparse.ArgumentParser()
 
     # optimizer settings, shared between DIM and classification
+    parser.add_argument("--data", default="cifar10")
     parser.add_argument('--opt', default=opt)
     parser.add_argument('--momentum', type=float, default=momentum)
     parser.add_argument('--weight_decay', type=float, default=weight_decay)
@@ -21,6 +22,7 @@ def argparser(batch_size=128, epochs=1000, seed=0, verbose=1, lr=1e-4,
     # TODO: add architecture options
     parser.add_argument('--global_dim', action="store_true")
     parser.add_argument('--encoder_stride', type=int, default=2)
+    parser.add_argument('--code_size', type=int, default=64)
     parser.add_argument('--mi_estimator', type=str, default="js")
     parser.add_argument('--prior_matching', action="store_true")
     parser.add_argument('--decoder_ckpt', type=str, default=None)

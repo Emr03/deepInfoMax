@@ -29,15 +29,20 @@ if __name__ == "__main__":
     train_log = open("{}/train.log".format(workspace_dir), "w")
     test_log = open("{}/test.log".format(workspace_dir), "w")
 
-    train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
-    _, test_loader = data_loaders.cifar_loaders(args.batch_size)
+    if args.data == "cifar10":
+        train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
+        _, test_loader = data_loaders.cifar_loaders(args.batch_size)
+
+    elif args.data == "celeb":
+        train_loader, _ = data_loaders.celeb_loaders(args.batch_size)
+        _, test_loader = data_loaders.celeb_loaders(args.batch_size)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride)
+    encoder = GlobalEncoder(stride=args.encoder_stride, output_size=args.code_size)
     if args.global_dim:
         DIM = GlobalDIM(encoder, type=args.mi_estimator)
 
@@ -45,7 +50,7 @@ if __name__ == "__main__":
         DIM = LocalDIM(encoder, type=args.mi_estimator)
 
     if args.prior_matching:
-        prior_matching = PriorMatchingDiscriminator(encoder_dim=64, device=args.device)
+        prior_matching = PriorMatchingDiscriminator(encoder_dim=args.code_size, device=args.device)
         D_opt = optim.Adam(prior_matching.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         prior_matching = prior_matching.to(args.device) 
         #prior_matching = nn.DataParallel(prior_matching)

@@ -50,30 +50,30 @@ def critic_attack(E, critic, num_steps, random_restart=True):
 
     pass
 
-def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, c=1.0, random_restart=True):
+def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, c=10., random_restart=False):
 
     _, _, Z_s = encoder(X_s)
     _, _, Z_t = encoder(X_t)
 
-    if random_restart:
-        w = torch.randn_like(X_s, requires_grad=True)
+    # inverse hyperbolic tangent to initialize w based on block constraints of CW attack
+    # w is initialized s.t initial delta is 0
+    X_s = torch.clamp(X_s, min=0.001, max=1 - 0.001)
+    y = 2 * (X_s) - 1
+    w = torch.tensor(0.5 * (torch.log1p(y) - torch.log1p(-y)), requires_grad=True)
 
-    else:
-        w = torch.zeros_like(X_s, requires_grad=True)
-     
     # implementation of block constraint
     delta = 0.5 * (torch.tanh(w) + 1) - X_s
+
+    opt = torch.optim.Adam(params=[w], lr=step_size)
     for n in range(max_steps):
-        # x = torch.autograd.Variable(X.data, requires_grad=True)
         _, _, Z_s = encoder(X_s + delta)
         z_norm = torch.norm(Z_s - Z_t, p=2, dim=-1) 
-        delta_norm = torch.norm(delta, p=2, dim=(-1, -2, -3))
+        delta_norm = torch.norm(delta, p=float('inf'), dim=(-1, -2, -3))
         loss = z_norm + c * delta_norm
         loss.mean().backward(retain_graph=True)
-        grad = w.grad.detach()
-        # print("grad", grad)
+        opt.step()
+        delta = 0.5 * (torch.tanh(w) + 1) - X_s
         print(z_norm.mean(), delta_norm.mean())
-        #delta = get_projected_step(delta, grad, 2, epsilon, step_size)
 
     X_adv = X_s + delta
     return X_adv, Z_s, z_norm.mean(), z_norm.min()
