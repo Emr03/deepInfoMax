@@ -27,8 +27,15 @@ if __name__ == "__main__":
     train_log = open("{}/train.log".format(workspace_dir), "a")
     test_log = open("{}/test.log".format(workspace_dir), "a")
 
-    train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
-    _, test_loader = data_loaders.cifar_loaders(args.batch_size)
+    if args.data == "cifar10":
+        train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
+        _, test_loader = data_loaders.cifar_loaders(args.batch_size)
+        input_size = 32
+
+    elif args.data == "celeb":
+        train_loader, _ = data_loaders.celeb_loaders(args.batch_size)
+        _, test_loader = data_loaders.celeb_loaders(args.batch_size)
+        input_size = 64
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -37,10 +44,10 @@ if __name__ == "__main__":
 
     encoder = GlobalEncoder(stride=args.encoder_stride)
     # load encoder from checkpoint
-    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
+    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"], input_size=input_size)
     encoder = encoder.to(args.device)
 
-    decoder = DecoderY(input_size=encoder.output_size)
+    decoder = DecoderY(input_size=encoder.output_size, output_size=input_size)
     decoder = decoder.to(args.device)
     opt = optim.Adam(decoder.parameters(), lr=args.lr)
     e = 0
