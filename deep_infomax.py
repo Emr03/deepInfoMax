@@ -32,17 +32,19 @@ if __name__ == "__main__":
     if args.data == "cifar10":
         train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
         _, test_loader = data_loaders.cifar_loaders(args.batch_size)
+        input_size = 32
 
     elif args.data == "celeb":
         train_loader, _ = data_loaders.celeb_loaders(args.batch_size)
         _, test_loader = data_loaders.celeb_loaders(args.batch_size)
+        input_size = 64 
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride, output_size=args.code_size)
+    encoder = GlobalEncoder(stride=args.encoder_stride, output_size=args.code_size, input_size=input_size)
     if args.global_dim:
         DIM = GlobalDIM(encoder, type=args.mi_estimator)
 
