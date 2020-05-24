@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from models.encoders import *
 
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -14,7 +15,7 @@ class DecoderY(nn.Module):
     """
     Decoder for reconstructing inputs
     """
-    def __init__(self, input_size):
+    def __init__(self, input_size, output_size=32):
         """
 
         :param input_size: shape of global representation
@@ -24,6 +25,24 @@ class DecoderY(nn.Module):
         self.pre_tconv = nn.Sequential(nn.Linear(input_size, 512*4*4),
                                    nn.ReLU(),
                                    nn.BatchNorm1d(512*4*4))
+
+        if output_size == 64:
+            self.tconv_model = nn.Sequential(nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=4, stride=2, padding=1),
+                                             nn.ReLU(),
+                                             nn.BatchNorm2d(256),
+                                             nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1),
+                                             nn.ReLU(),
+                                             nn.BatchNorm2d(128),
+                                             nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1),
+                                             nn.ReLU(),
+                                             nn.BatchNorm2d(64),
+                                             nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=4,
+                                                                stride=2, padding=1),
+                                             nn.ReLU(),
+                                             nn.BatchNorm2d(64),
+                                             nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1, bias=False),
+                                             nn.Tanh()
+                                             )
 
         self.tconv_model = nn.Sequential(nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=4, stride=2, padding=1),
                                          nn.ReLU(),

@@ -38,6 +38,7 @@ def mnist_loaders(batch_size, shuffle_test=False):
     test_loader = torch.utils.data.DataLoader(mnist_test, batch_size=batch_size, shuffle=shuffle_test, pin_memory=True)
     return train_loader, test_loader
 
+
 def fashion_mnist_loaders(batch_size):
     mnist_train = datasets.MNIST("fashion_mnist", train=True,
                                  download=True, transform=transforms.ToTensor())
