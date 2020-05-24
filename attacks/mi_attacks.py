@@ -50,7 +50,7 @@ def critic_attack(E, critic, num_steps, random_restart=True):
 
     pass
 
-def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, c=10., random_restart=False):
+def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, c=1000., random_restart=False):
 
     _, _, Z_s = encoder(X_s)
     _, _, Z_t = encoder(X_t)
@@ -63,16 +63,18 @@ def source2target(X_s, X_t, encoder, epsilon, step_size, max_steps=500, c=10., r
 
     # implementation of block constraint
     delta = 0.5 * (torch.tanh(w) + 1) - X_s
-
+    print("delta", delta)
     opt = torch.optim.Adam(params=[w], lr=step_size)
+    #opt = torch.optim.SGD(params=[w], lr=step_size)
     for n in range(max_steps):
         _, _, Z_s = encoder(X_s + delta)
         z_norm = torch.norm(Z_s - Z_t, p=2, dim=-1) 
-        delta_norm = torch.norm(delta, p=float('inf'), dim=(-1, -2, -3))
+        delta_norm = torch.norm(delta, p=float("inf"), dim=(-1, -2, -3))
         loss = z_norm + c * delta_norm
         loss.mean().backward(retain_graph=True)
         opt.step()
         delta = 0.5 * (torch.tanh(w) + 1) - X_s
+        delta = torch.clamp(delta, min=-epsilon, max=epsilon)
         print(z_norm.mean(), delta_norm.mean())
 
     X_adv = X_s + delta

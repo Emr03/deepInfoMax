@@ -126,8 +126,8 @@ def visualize_impostor_attacks(encoder, decoder, X, y, args):
     y = y[0:batch_size // 2]
     C_clean, FC_clean, Z_clean = encoder(X)
     print(X.shape, Z_clean.shape)
-    X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=2.0,
-                                                 max_steps=70000, step_size=0.001)
+    X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=0.03,
+                                                 max_steps=770, step_size=0.0001)
 
     print("Avg Diff {} Min Diff {}".format(diff, min_diff))
     delta = X_adv - X
@@ -148,16 +148,17 @@ def visualize_impostor_attacks(encoder, decoder, X, y, args):
     plt.imshow(X_adv[0].permute(1, 2, 0))
     plt.show()
 
-    X_hat = decoder(Z_clean)
-    X_hat = ((X_hat * std + mean) * 255).int()
-    plt.imshow(X_hat[0].permute(1, 2, 0))
-    plt.show()
+    if decoder is not None:
+        X_hat = decoder(Z_clean)
+        X_hat = ((X_hat * std + mean) * 255).int()
+        plt.imshow(X_hat[0].permute(1, 2, 0))
+        plt.show()
 
-    print(E_adv.shape)
-    X_hat_adv = decoder(E_adv.unsqueeze(0))
-    X_hat_adv = ((X_hat_adv * std + mean) * 255).int()
-    plt.imshow(X_hat_adv[0].permute(1, 2, 0))
-    plt.show()
+        print(E_adv.shape)
+        X_hat_adv = decoder(E_adv.unsqueeze(0))
+        X_hat_adv = ((X_hat_adv * std + mean) * 255).int()
+        plt.imshow(X_hat_adv[0].permute(1, 2, 0))
+        plt.show()
 
     # reshape E x E
     E_diff = torch.abs((E_adv - Z_clean) / Z_clean).reshape(-1, 8, 8)
@@ -195,11 +196,11 @@ if __name__ == "__main__":
     # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_jsd_prior_matching_new_checkpoint.pth",
     #                                   map_location=torch.device("cpu"))["classifier_state_dict"])
 
-    classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_js_no_sigmoid_checkpoint.pth",
-                                       map_location=torch.device("cpu"))["classifier_state_dict"])
+    # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_js_no_sigmoid_checkpoint.pth",
+    #                                    map_location=torch.device("cpu"))["classifier_state_dict"])
 
-    # classifier.load_state_dict(torch.load("classifier_supervised_fc/classifier_supervised_fc_checkpoint.pth",
-    #                                       map_location=torch.device("cpu"))["classifier_state_dict"])
+    classifier.load_state_dict(torch.load("classifier_supervised_fc_checkpoint.pth",
+                                          map_location=torch.device("cpu"))["classifier_state_dict"])
 
     decoder = DecoderY(input_size=encoder.output_size)
     decoder.load_state_dict(torch.load("decoder_local_infomax_encoder_js_no_sigmoid_new/decoder_local_infomax_encoder_js_no_sigmoid_new_checkpoint.pth",
@@ -210,5 +211,5 @@ if __name__ == "__main__":
 
     #evaluation.evaluate_adversarial(args, model=classifier, loader=test_loader)
     for X, Y in test_loader:
-        visualize_impostor_attacks(encoder, decoder, X, Y, args)
+        visualize_impostor_attacks(encoder, None, X, Y, args)
 
