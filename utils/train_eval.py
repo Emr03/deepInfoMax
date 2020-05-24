@@ -265,8 +265,7 @@ def train_decoder(loader, encoder, decoder, opt, epoch, log, verbose, gpu):
 
         C, FC, E = encoder(X)
         R = decoder(E)
-        loss = torch.norm(R - X, p=2, dim=(-3, -2, -1)).pow(2).mean()
-        #loss = torch.nn.functional.mse_loss(input=R, target=X)
+        loss = torch.pow(R - X, 2).sum() / X.shape[0]
         opt.zero_grad()
         loss.backward()
         opt.step()
