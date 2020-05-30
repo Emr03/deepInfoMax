@@ -91,6 +91,7 @@ class LocalEncoder(nn.Module):
         output = self.output_layer(C)
         return C, output
 
+
 class GlobalEncoder(nn.Module):
 
     def __init__(self, ndf=64, stride=1, input_size=32, output_size=64):
@@ -109,7 +110,103 @@ class GlobalEncoder(nn.Module):
         E = self.fc_net(enc_input)
         return C, FC, E.squeeze()
 
-netD = GlobalEncoder(stride=2)
-netD.apply(weights_init)
-X = torch.randn((132, 3, 32, 32))
-netD(X)
+
+class ConvEncoder(nn.Module):
+    def __init__(self, num_channels=3, ndf=64, code_dim=64, input_size=64, padding=1, dropout=0.1):
+        super(ConvEncoder, self).__init__()
+        self.code_dim = code_dim
+        stride=2
+        self.input_size = input_size
+        self.conv_net = nn.Sequential(
+            # input is (nc) x 32 x 32
+            nn.Conv2d(num_channels, ndf, kernel_size=3, stride=stride, padding=padding, bias=True),
+            nn.BatchNorm2d(ndf),
+            # nn.Dropout2d(p=dropout),
+            nn.ReLU(inplace=True),
+            # state size. 64 x 29 x 29, or 16 x 16
+
+            nn.Conv2d(ndf, ndf * 2, kernel_size=3, stride=stride, padding=padding, bias=True),
+            nn.BatchNorm2d(ndf * 2),
+            # nn.Dropout2d(p=dropout),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=3, stride=stride, padding=padding, bias=True),
+            nn.BatchNorm2d(ndf * 4),
+            # nn.Dropout2d(p=dropout),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(ndf * 4, ndf * 4, kernel_size=3, stride=stride, padding=padding, bias=True),
+            nn.BatchNorm2d(ndf * 4),
+            # nn.Dropout2d(p=dropout),
+            nn.ReLU(inplace=True),
+        )
+
+        if self.input_size == 64:
+            self.output_shape = [ndf * 4, 4, 4]
+
+        elif self.input_size == 28:
+            self.output_shape = [ndf * 4, 2, 2]
+
+        self.output_size = self.output_shape[0] * self.output_shape[1] * self.output_shape[2]
+        self.mean = nn.Sequential(nn.Linear(self.output_size, 1024),
+                                    nn.ReLU(),
+                                    nn.Linear(1024, self.code_dim))
+
+        self.variance = nn.Sequential(nn.Linear(self.output_size, 1024),
+                                    nn.ReLU(),
+                                    nn.Linear(1024, self.code_dim),
+                                    nn.Softplus())
+
+    def forward(self, input):
+        # C: second to last conv layer, output: last conv layer
+        C = self.conv_net(input)
+        enc_input = torch.nn.Flatten()(C)
+        mean = self.mean(enc_input)
+        variance = self.variance(enc_input)
+        I = torch.eye(self.code_dim).to(input.device)
+        cov = torch.einsum('ij,ki->kij', I, variance)
+        return mean, cov
+
+
+class MLPEncoder(nn.Module):
+
+    def __init__(self, input_dim, hidden_dim, code_dim, prior="diagonal"):
+        """
+        :param input_dim:
+        :param hidden_dim:
+        :param code_dim:
+        :param prior:
+        """
+        super(MLPEncoder, self).__init__()
+        self.code_dim = code_dim
+        self.mean = nn.Sequential(nn.Linear(input_dim, hidden_dim),
+                                   nn.ReLU(),
+                                   nn.Linear(hidden_dim, code_dim))
+
+        self.cov = nn.Sequential(nn.Linear(input_dim, hidden_dim),
+                                 nn.ReLU(),
+                                 nn.Linear(hidden_dim, hidden_dim),
+                                 nn.ReLU(),
+                                 nn.Linear(hidden_dim, code_dim),
+                                 nn.Softplus())
+
+    def forward(self, X):
+        batch_size = X.shape[0]
+        mean = self.mean(X).unsqueeze(-1)
+        sigma = self.cov(X)
+        # make diagonal matrix from sigma
+        I = torch.eye(self.code_dim).to(X.device)
+        cov = torch.einsum('ij,ki->kij', I, sigma)
+        return mean, cov
+
+
+class IAFEncoder(nn.Module):
+
+    def __init__(self, base_encoder):
+
+        self.base_encoder = base_encoder
+
+# netD = GlobalEncoder(stride=2)
+# netD.apply(weights_init)
+# X = torch.randn((132, 3, 32, 32))
+# netD(X)

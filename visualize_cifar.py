@@ -8,7 +8,7 @@ from utils import data_loaders
 from matplotlib import pyplot as plt
 from models.encoders import *
 from models.classifier import *
-from models.decoder import *
+from models.decoders import *
 import random
 import numpy as np
 
@@ -196,14 +196,14 @@ if __name__ == "__main__":
     # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_jsd_prior_matching_new_checkpoint.pth",
     #                                   map_location=torch.device("cpu"))["classifier_state_dict"])
 
-    # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_js_no_sigmoid_checkpoint.pth",
+    # classifier.load_state_dict(torch.load("classifier_fc_local_infomax_encoder_nce_no_sigmoid_checkpoint.pth",
     #                                    map_location=torch.device("cpu"))["classifier_state_dict"])
 
-    classifier.load_state_dict(torch.load("classifier_supervised_fc_checkpoint.pth",
-                                          map_location=torch.device("cpu"))["classifier_state_dict"])
+    # classifier.load_state_dict(torch.load("classifier_supervised_fc_checkpoint.pth",
+    #                                       map_location=torch.device("cpu"))["classifier_state_dict"])
 
     decoder = DecoderY(input_size=encoder.output_size)
-    decoder.load_state_dict(torch.load("decoder_local_infomax_encoder_js_no_sigmoid_new/decoder_local_infomax_encoder_js_no_sigmoid_new_checkpoint.pth",
+    decoder.load_state_dict(torch.load("decoder_local_infomax_encoder_nce_no_sigmoid_new/decoder_local_infomax_encoder_nce_no_sigmoid_new_checkpoint.pth",
                                        map_location=torch.device("cpu"))["decoder_state_dict"])
     decoder.eval()
 
@@ -211,5 +211,5 @@ if __name__ == "__main__":
 
     #evaluation.evaluate_adversarial(args, model=classifier, loader=test_loader)
     for X, Y in test_loader:
-        visualize_impostor_attacks(encoder, None, X, Y, args)
+        visualize_encoder_attacks(encoder, decoder, X, Y, args)
 

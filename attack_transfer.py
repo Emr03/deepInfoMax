@@ -6,7 +6,7 @@ from attacks.mi_attacks import *
 from utils.argparser import argparser
 from utils import data_loaders
 from models.classifier import *
-from models.decoder import *
+from models.decoders import *
 import random
 from tqdm import tqdm
 import numpy as np
