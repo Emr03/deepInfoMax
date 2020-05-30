@@ -42,9 +42,9 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride)
+    encoder = GlobalEncoder(stride=args.encoder_stride, input_size=input_size, output_size=args.code_size)
     # load encoder from checkpoint
-    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"], input_size=input_size)
+    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
     encoder = encoder.to(args.device)
 
     decoder = DecoderY(input_size=encoder.output_size, output_size=input_size)

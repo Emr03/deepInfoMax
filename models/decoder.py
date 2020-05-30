@@ -41,7 +41,7 @@ class DecoderY(nn.Module):
                                              nn.ReLU(),
                                              nn.BatchNorm2d(64),
                                              nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1, bias=False),
-                                             nn.Tanh()
+                                             nn.Sigmoid()
                                              )
         else:
             self.tconv_model = nn.Sequential(nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=4, stride=2, padding=1),
