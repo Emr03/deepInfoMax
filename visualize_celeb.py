@@ -120,7 +120,7 @@ if __name__ == "__main__":
                                        map_location=torch.device("cpu"))["encoder_state_dict"])
     encoder.eval()
 
-    decoder = DecoderY(input_size=encoder.output_size, output_size=64)
+    decoder = DeconvDecoder(input_size=encoder.output_size, output_size=64)
     decoder.load_state_dict(torch.load("experiments/"
                                        "decoder_local_infomax_encoder_dv_celeb/decoder_local_infomax_encoder_dv_celeb_checkpoint.pth",
                                        map_location=torch.device("cpu"))["decoder_state_dict"])
