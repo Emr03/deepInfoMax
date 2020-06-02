@@ -7,7 +7,7 @@ from models.prior_matching import *
 from utils.argparser import argparser
 from utils import data_loaders
 from utils import train_eval
-from utils import get_config
+from utils.get_config import get_config
 import random
 import numpy as np
 import os
@@ -26,13 +26,14 @@ if __name__ == "__main__":
     train_log = open("{}/train.log".format(workspace_dir), "w")
     test_log = open("{}/test.log".format(workspace_dir), "w")
 
-    input_size, train_loader, test_loader = get_config(args.data)
+    input_size, ndf, num_channels, train_loader, test_loader = get_config(args)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride, output_size=args.code_size, input_size=input_size)
+    encoder = GlobalEncoder(stride=args.encoder_stride, ndf=ndf, num_channels=num_channels,
+            output_size=args.code_size, input_size=input_size)
     if args.global_dim:
         DIM = GlobalDIM(encoder, type=args.mi_estimator)
 

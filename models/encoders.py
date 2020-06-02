@@ -94,9 +94,9 @@ class LocalEncoder(nn.Module):
 
 class GlobalEncoder(nn.Module):
 
-    def __init__(self, ndf=64, stride=1, input_size=32, output_size=64):
+    def __init__(self, ndf=64, num_channels=3, stride=1, input_size=32, output_size=64):
         super(GlobalEncoder, self).__init__()
-        self.local_encoder = LocalEncoder(ndf=ndf, stride=stride, input_size=input_size)
+        self.local_encoder = LocalEncoder(ndf=ndf, num_channels=num_channels, stride=stride, input_size=input_size)
         self.output_size = output_size
         self.fc_net = nn.Sequential(nn.Linear(self.local_encoder.output_size, 1024),
                                     nn.ReLU(),
