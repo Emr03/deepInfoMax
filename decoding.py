@@ -3,10 +3,11 @@ import torch.nn as nn
 from utils.data_loaders import *
 from models.mi_estimation import *
 from models.encoders import *
-from models.decoder import *
+from models.decoders import *
 from utils.argparser import argparser
 from utils import data_loaders
 from utils import train_eval
+from utils.get_config import get_config
 import random
 import numpy as np
 import json
@@ -21,21 +22,10 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir, exist_ok=True)
 
-    # save arguments as json file
-    # json.dump(obj=args, separators="\t", indent=4, fp="{}_args".format(workspace_dir))
-
     train_log = open("{}/train.log".format(workspace_dir), "a")
     test_log = open("{}/test.log".format(workspace_dir), "a")
 
-    if args.data == "cifar10":
-        train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
-        _, test_loader = data_loaders.cifar_loaders(args.batch_size)
-        input_size = 32
-
-    elif args.data == "celeb":
-        train_loader, _ = data_loaders.celeb_loaders(args.batch_size)
-        _, test_loader = data_loaders.celeb_loaders(args.batch_size)
-        input_size = 64
+    input_size, train_loader, test_loader = get_config(args.data)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -47,7 +37,7 @@ if __name__ == "__main__":
     encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
     encoder = encoder.to(args.device)
 
-    decoder = DecoderY(input_size=encoder.output_size, output_size=input_size)
+    decoder = DeconvDecoder(input_size=encoder.output_size, output_size=input_size)
     decoder = decoder.to(args.device)
     opt = optim.Adam(decoder.parameters(), lr=args.lr)
     e = 0

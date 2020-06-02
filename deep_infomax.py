@@ -7,6 +7,7 @@ from models.prior_matching import *
 from utils.argparser import argparser
 from utils import data_loaders
 from utils import train_eval
+from utils import get_config
 import random
 import numpy as np
 import os
@@ -22,23 +23,10 @@ if __name__ == "__main__":
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir, exist_ok=True)
 
-    # save arguments as json file
-    #with open("{}_args".format(workspace_dir), "w") as f:
-    #    json.dump(obj=args.__dict__, indent=4, fp=f)
-
     train_log = open("{}/train.log".format(workspace_dir), "w")
     test_log = open("{}/test.log".format(workspace_dir), "w")
 
-    if args.data == "cifar10":
-        train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
-        _, test_loader = data_loaders.cifar_loaders(args.batch_size)
-        input_size = 32
-
-    elif args.data == "celeb":
-        train_loader, _ = data_loaders.celeb_loaders(args.batch_size)
-        _, test_loader = data_loaders.celeb_loaders(args.batch_size)
-        input_size = 64 
-
+    input_size, train_loader, test_loader = get_config(args.data)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(0)
@@ -55,8 +43,7 @@ if __name__ == "__main__":
         prior_matching = PriorMatchingDiscriminator(encoder_dim=args.code_size, device=args.device)
         D_opt = optim.Adam(prior_matching.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         prior_matching = prior_matching.to(args.device) 
-        #prior_matching = nn.DataParallel(prior_matching)
-    
+
     else:
         prior_matching = None
         D_opt = None
@@ -67,16 +54,6 @@ if __name__ == "__main__":
     enc_opt = optim.Adam(DIM.module.global_encoder.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     T_opt = optim.Adam(DIM.module.T.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-    if args.eval_only:
-        ckpt = torch.load(args.encoder_ckpt)
-        DIM.module.global_encoder.load_state_dict(ckpt['encoder_state_dict'])
-        DIM.module.T.load_state_dict(ckpt['discriminator_state_dict'])
-        e = ckpt["epoch"]
-        mi = train_eval.eval_dim(test_loader, DIM, e, test_log, args.verbose, args.gpu)
-        print('Epoch: [{0}]\t'
-                  'MI {mi}\t'.format(e, mi=mi), file=test_log)
-        test_log.flush()
-
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
@@ -85,7 +62,7 @@ if __name__ == "__main__":
 
         e += 1
         torch.save({
-            'encoder_state_dict': DIM.module.global_encoder.state_dict(),
+            'encoder_state_6dict': DIM.module.global_encoder.state_dict(),
             'discriminator_state_dict': DIM.module.T.state_dict(),
             'prior_matching_state_dict': prior_matching.state_dict() if args.prior_matching else None,
             'epoch': e,
