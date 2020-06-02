@@ -32,7 +32,7 @@ if __name__ == "__main__":
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride, ndf=ndf, num_channels=num_channels,
+    encoder = GlobalEncoder(ndf=ndf, num_channels=num_channels,
             output_size=args.code_size, input_size=input_size)
     if args.global_dim:
         DIM = GlobalDIM(encoder, type=args.mi_estimator)
