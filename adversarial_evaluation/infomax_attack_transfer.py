@@ -147,6 +147,7 @@ def get_classifier_transfer_stats(args, source_model, target_model, loader, log)
                   fraction_transfer=fraction_transfer_meter,
                   fraction_transfer_same=fraction_transfer_same_meter), file=log)
 
+
 def load_classifier(model_ckpt, args):
     encoder = GlobalEncoder(stride=args.encoder_stride)
 
