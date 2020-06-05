@@ -35,7 +35,7 @@ if __name__ == "__main__":
     encoder = GlobalEncoder(ndf=ndf, num_channels=num_channels,
                             output_size=args.code_size, input_size=input_size)
     # load encoder from checkpoint
-    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
+    encoder.load_state_dict(torch.load(args.encoder_ckpt)["encoder_state_6dict"])
     encoder = encoder.to(args.device)
 
     decoder = DeconvDecoder(input_size=encoder.output_size, output_size=input_size, output_channels=num_channels, ndf=ndf)
