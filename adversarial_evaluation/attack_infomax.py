@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from utils.data_loaders import *
+from utils.get_config import get_config
 from models.mi_estimation import *
 from models.encoders import *
 from models.classifier import *
@@ -8,7 +9,8 @@ from utils.argparser import argparser
 from utils import data_loaders
 from attacks.evaluation import evaluate_adversarial
 from attacks.gradient_untargeted import pgd, fgsm
-from attacks.mi_attacks import encoder_attack, source2target
+from attacks.mi_attacks import encoder_attack
+from attacks.gradient_targeted import cw_infomax_encoder_attack
 from utils.train_eval import AverageMeter
 import matplotlib
 matplotlib.use('Agg')
@@ -17,7 +19,6 @@ import random
 import numpy as np
 import json
 from tqdm import tqdm
-import seaborn as sns
 
 
 def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type="class"):
@@ -39,16 +40,13 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
     z_l2_norms = AverageMeter()
     z_l2_frac = AverageMeter()
 
-    classifier.eval()
-    discriminator.eval()
-
     batch = tqdm(loader, total=len(loader) // loader.batch_size)
     for i, (X, y) in enumerate(batch):
 
         if args.gpu:
             X, y = X.cuda(), y.cuda()
 
-        if type == "class":
+        if type == "class" and classifier is not None:
             # adv samples using classifier
             if args.attack == "pgd":
                 X_adv, delta, out, out_adv = pgd(model=classifier, X=X, y=y, epsilon=args.epsilon,
@@ -63,12 +61,6 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
 
             batch.set_description("Avg Diff {} Max Diff {}".format(diff, max_diff))
 
-            # run classifier on adversarial representations
-            logits_clean = classifier(X)
-            logits_adv = classifier(X_adv)
-            out = logits_clean.max(1)[1]
-            out_adv = logits_adv.max(1)[1]
-
         elif type == "impostor":
             batch_size = X.shape[0]
             # using the given batch form X_s X_t pairs
@@ -78,14 +70,8 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
             y = y[0:batch_size // 2]
             X = X_s
 
-            X_adv, E_adv, diff, min_diff = source2target(X_s, X_t, encoder=encoder, epsilon=args.epsilon,
-                                                         max_steps=500, step_size=0.001, random_restart=False)
-
-            # run classifier on adversarial representations
-            logits_clean = classifier(X_s)
-            logits_adv = classifier(X_adv)
-            out = logits_clean.max(1)[1]
-            out_adv = logits_adv.max(1)[1]
+            X_adv, E_adv, diff, min_diff = cw_infomax_encoder_attack(X_s, X_t, encoder=encoder,
+                                                     num_steps=2000, alpha=0.001, c=0.1, p=2)
 
             batch.set_description("Avg Diff {} Min Diff {}".format(diff, min_diff))
             
@@ -96,20 +82,19 @@ def get_attack_stats(args, encoder, classifier, discriminator, loader, log, type
             _, _, E = encoder(X)
             _, _, E_d = encoder(X_adv)
             norm = torch.norm(E - E_d, p=2, dim=-1)
+            batch.set_description("Avg Diff {} Max Diff {} ".format(norm.mean(), norm.max()))
 
-            # run classifier on adversarial representations
+        if classifier is not None:
+            # UPDATE CLEAN and ADV ERRORS
             logits_clean = classifier(X)
             logits_adv = classifier(X_adv)
             out = logits_clean.max(1)[1]
             out_adv = logits_adv.max(1)[1]
 
-            batch.set_description("Avg Diff {} Max Diff {} ".format(norm.mean(), norm.max()))
-
-        # UPDATE CLEAN and ADV ERRORS
-        err_clean = (out.data != y).float().sum() / X.size(0)
-        err_adv = (out_adv.data != y).float().sum() / X.size(0)
-        clean_errors.update(err_clean)
-        adv_errors.update(err_adv)
+            err_clean = (out.data != y).float().sum() / X.size(0)
+            err_adv = (out_adv.data != y).float().sum() / X.size(0)
+            clean_errors.update(err_clean)
+            adv_errors.update(err_adv)
 
         # UPDATE L2 NORM METERS
         C_clean, FC_clean, Z_clean = encoder(X)
@@ -186,38 +171,43 @@ if __name__ == "__main__":
     impostor_attack_log = open("{}/impostor_attack.log".format(workspace_dir), "w")
     random_attack_log = open("{}/random_attack.log".format(workspace_dir), "w")
 
-    train_loader, _ = data_loaders.cifar_loaders(args.batch_size)
-    _, test_loader = data_loaders.cifar_loaders(args.batch_size)
+    input_size, ndf, num_channels, train_loader, test_loader = get_config(args)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     random.seed(0)
     np.random.seed(0)
 
-    encoder = GlobalEncoder(stride=args.encoder_stride)
+    encoder = GlobalEncoder(ndf=ndf, num_channels=num_channels,
+            output_size=args.code_size, input_size=input_size)
+
+    encoder.laod_state_dict(torch.load(args.encoder_ckpt)["encoder_state_dict"])
 
     # create classifier
-    if args.input_layer == "fc":
-        classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+    if args.classifier_ckpt:
+        if args.input_layer == "fc":
+            classifier = ClassifierFC(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
-    elif args.input_layer == "conv":
-        classifier = ClassifierConv(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        elif args.input_layer == "y":
+            classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
 
-    elif args.input_layer == "y":
-        classifier = ClassifierY(encoder=encoder, hidden_units=args.hidden_units, num_classes=10)
+        # load classifier from checkpoint
+        classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"])
 
-    # load classifier from checkpoint
-    classifier.load_state_dict(torch.load(args.classifier_ckpt)["classifier_state_dict"])
+        classifier.eval()
+    else:
+        classifier = None
 
-    # if args.cuda_ids and len(args.cuda_ids) > 1:
-    #     classifier = nn.DataParallel(classifier)
-
-    DIM = LocalDIM(encoder, type=args.mi_estimator)
-    DIM = nn.DataParallel(DIM).to(args.device)
+    DIM = LocalDIM(encoder, type=args.mi_estimator).to(args.device)
+    #DIM = nn.DataParallel(DIM).to(args.device)
     DIM.module.T.load_state_dict(torch.load(args.encoder_ckpt)["discriminator_state_dict"])
     classifier = classifier.to(args.device)
     discriminator = DIM.module
-    get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=class_attack_log, type="class")
+    discriminator.eval()
+
+    if classifier is not None:
+        get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=class_attack_log, type="class")
+
     get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=encoder_attack_log, type="encoder")
     get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=impostor_attack_log, type="impostor")
     get_attack_stats(args, encoder, classifier, discriminator, test_loader, log=random_attack_log, type="random")

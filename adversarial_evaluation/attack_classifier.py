@@ -7,6 +7,7 @@ from models.classifier import *
 from utils.argparser import argparser
 from utils import data_loaders
 from attacks.evaluation import evaluate_adversarial
+from adversarial_evaluation.attack_infomax import get_attack_stats
 import random
 import numpy as np
 import json

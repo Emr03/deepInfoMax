@@ -34,6 +34,7 @@ if __name__ == "__main__":
 
     encoder = GlobalEncoder(ndf=ndf, num_channels=num_channels,
             output_size=args.code_size, input_size=input_size)
+
     if args.global_dim:
         DIM = GlobalDIM(encoder, type=args.mi_estimator)
 
@@ -58,11 +59,12 @@ if __name__ == "__main__":
     # if num of visible devices > 1, use DataParallel wrapper
     e = 0
     while e < args.epochs:
-        loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu, prior_matching, D_opt, gamma=args.gamma)
+        loss = train_eval.train_dim(train_loader, DIM, enc_opt, T_opt, e, train_log, args.verbose, args.gpu,
+                                    prior_matching, D_opt, gamma=args.gamma)
 
         e += 1
         torch.save({
-            'encoder_state_6dict': DIM.module.global_encoder.state_dict(),
+            'encoder_state_dict': DIM.module.global_encoder.state_dict(),
             'discriminator_state_dict': DIM.module.T.state_dict(),
             'prior_matching_state_dict': prior_matching.state_dict() if args.prior_matching else None,
             'epoch': e,
