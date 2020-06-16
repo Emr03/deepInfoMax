@@ -7,7 +7,7 @@ from attacks.vae_attacks import l2_wasserstein
 from utils.argparser import argparser
 from utils import data_loaders
 from models.decoders import *
-from utils import get_config
+from utils.get_config import get_config
 import random
 from tqdm import tqdm
 import numpy as np
@@ -33,31 +33,32 @@ def infomax_transfer(src_encoder, tgt_encoder, src_decoder, tgt_decoder, loader,
                                                      num_steps=2000, alpha=0.001, c=0.1, p=2)
 
         # evaluate decoding wrt target image
-        _, _, Z_tgt = src_encoder(X_t)
-        X_hat_tgt = src_decoder(Z_tgt)
-        X_hat_adv = src_decoder(Z_b)
+        with torch.no_grad():
+            _, _, Z_tgt = src_encoder(X_t)
+            X_hat_tgt = src_decoder(Z_tgt)
+            X_hat_adv = src_decoder(Z_b)
 
-        recon_loss = torch.norm(X_hat_tgt - X_hat_adv, p=2, dim=(-3, -2, -1)).mean()
-        decoder_loss.update(recon_loss)
-        main_loss.update(loss)
+            recon_loss = torch.norm(X_hat_tgt - X_hat_adv, p=2, dim=(-3, -2, -1)).mean()
+            decoder_loss.update(recon_loss)
+            main_loss.update(loss)
 
-        # compute transfer losses
-        _, _, Z = tgt_encoder(X_s)
-        _, _, Z_adv = tgt_encoder(X_s + delta)
-        _, _, Z_tgt = tgt_encoder(X_t)
+            # compute transfer losses
+            _, _, Z = tgt_encoder(X_s)
+            _, _, Z_adv = tgt_encoder(X_s + delta)
+            _, _, Z_tgt = tgt_encoder(X_t)
 
-        X_hat_tgt = tgt_decoder(Z_tgt)
-        loss = torch.norm(Z_tgt - Z_adv, dim=-1, p=2).mean()
-        X_hat_adv = tgt_decoder(Z_adv)
-        recon_loss = torch.norm(X_hat_tgt - X_hat_adv, p=2, dim=(-3, -2, -1)).mean()
-        transfer_loss.update(loss)
-        transfer_decoder_loss.update(recon_loss)
+            X_hat_tgt = tgt_decoder(Z_tgt)
+            loss = torch.norm(Z_tgt - Z_adv, dim=-1, p=2).mean()
+            X_hat_adv = tgt_decoder(Z_adv)
+            recon_loss = torch.norm(X_hat_tgt - X_hat_adv, p=2, dim=(-3, -2, -1)).mean()
+            transfer_loss.update(loss)
+            transfer_decoder_loss.update(recon_loss)
 
 
     print("Encoder Loss: {}\t "
           "Transfer Encoder Loss: {}\t"
           "Decoder Matching Loss {}\t"
-          "Transfer Decoder Matching Loss ".format(main_loss.avg, transfer_loss.avg,
+          "Transfer Decoder Matching Loss {}".format(main_loss.avg, transfer_loss.avg,
                                                    decoder_loss.avg, transfer_decoder_loss.avg), file=log)
 
     log.flush()
@@ -104,7 +105,7 @@ def vae_transfer(src_vae, tgt_vae, loader, log, gpu):
     print("Encoder Loss: {}\t "
           "Transfer Encoder Loss: {}\t"
           "Decoder Matching Loss {}\t"
-          "Transfer Decoder Matching Loss ".format(main_loss.avg, transfer_loss.avg,
+          "Transfer Decoder Matching Loss {}".format(main_loss.avg, transfer_loss.avg,
                                                    decoder_loss.avg, transfer_decoder_loss.avg), file=log)
 
     log.flush()
@@ -131,9 +132,12 @@ if __name__ == "__main__":
     infomax_encoder_ckpts = []
     infomax_decoder_ckpts = []
     vae_ckpts = []
-    for dir in glob.iglob("experiments/encoders/{}".format(args.data)):
-        encoder_ckpt = "{}/{}_checkpoint.pth".format(dir, dir)
-        decoder_ckpt = "experiments/decoders/decoder_{}/decoder_{}_checkpoint.pth".format(dir, dir)
+    for dir in glob.iglob("experiments/encoders/{}/local_infomax_encoder_*_{}".format(args.data, args.data)):
+        print(dir)
+        encoder_name = dir.split("/")[-1]
+        encoder_ckpt = "{}/{}_checkpoint.pth".format(dir, encoder_name)
+        decoder_ckpt = "experiments/decoders/{}/decoder_{}/decoder_{}_checkpoint.pth".format(args.data, 
+                encoder_name, encoder_name)
         infomax_encoder_ckpts.append(encoder_ckpt)
         infomax_decoder_ckpts.append(decoder_ckpt)
 
@@ -170,12 +174,20 @@ if __name__ == "__main__":
             if ckpt_i == ckpt_j:
                 continue
 
-            src_encoder.load_state_dict(torch.load(ckpt_i, map_location=args.device)["encoder_state_dict"])
-            src_decoder.load_state_dict(torch.load(ckpt_i, map_location=args.device)["encoder_state_dict"])
+            encoder_ckpt = torch.load(ckpt_i, map_location=args.device)
+            src_encoder.load_state_dict(encoder_ckpt["encoder_state_dict"])
+            del encoder_ckpt
+            decoder_ckpt = torch.load(infomax_decoder_ckpts[i], map_location=args.device)
+            src_decoder.load_state_dict(decoder_ckpt["decoder_state_dict"])
+            del decoder_ckpt
 
-            tgt_encoder.load_state_dict(torch.load(ckpt_j, map_location=args.device)["encoder_state_dict"])
-            tgt_decoder.load_state_dict(torch.load(ckpt_j, map_location=args.device)["encoder_state_dict"])
-
+            encoder_ckpt = torch.load(ckpt_j, map_location=args.device)
+            tgt_encoder.load_state_dict(encoder_ckpt["encoder_state_dict"])
+            del encoder_ckpt
+            decoder_ckpt = torch.load(infomax_decoder_ckpts[j], map_location=args.device)
+            tgt_decoder.load_state_dict(decoder_ckpt["decoder_state_dict"])
+            del decoder_ckpt
+            torch.cuda.empty_cache()
             print("Source Model: {}\t Target Model: {}\t".format(ckpt_i, ckpt_j), file=log)
             log.flush()
 

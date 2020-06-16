@@ -83,7 +83,7 @@ class GlobalEncoder(nn.Module):
     def forward(self, input):
         # C: second to last conv layer, output: last conv layer
         C, output = self.local_encoder(input)
-        print(C.shape, output.shape)
+        #print(C.shape, output.shape)
         enc_input = torch.nn.Flatten()(output)
         FC = self.fc_net._modules["0"](enc_input)
         E = self.fc_net(enc_input)

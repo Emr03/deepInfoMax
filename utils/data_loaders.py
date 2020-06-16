@@ -20,10 +20,10 @@ import os
 def celeb_loaders(batch_size, shuffle_test=False):
     transform = transforms.Compose([transforms.Resize((64, 64), interpolation=2), transforms.ToTensor()])
 
-    celeb_train = datasets.CelebA("data", split='train', target_type='attr', transform=transform,
+    celeb_train = datasets.CelebA("~/data", split='train', target_type='attr', transform=transform,
                                 download=True)
 
-    celeb_test = datasets.CelebA("data", split="test", target_type="attr", transform=transform,
+    celeb_test = datasets.CelebA("~/data", split="test", target_type="attr", transform=transform,
                                  download=True)
 
     train_loader = torch.utils.data.DataLoader(celeb_train, batch_size=batch_size, shuffle=True, pin_memory=True)
